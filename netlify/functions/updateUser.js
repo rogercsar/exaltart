@@ -15,7 +15,18 @@ exports.handler = async function(event, context) {
   }
 
   try {
-    const userId = event.pathParameters?.id;
+    // Extrair ID de forma robusta (Netlify nem sempre popula pathParameters)
+    let userId = event.pathParameters?.userId || event.pathParameters?.id;
+    if (!userId && event.queryStringParameters && event.queryStringParameters.id) {
+      userId = event.queryStringParameters.id;
+    }
+    if (!userId && event.path) {
+      const segments = event.path.split('/').filter(Boolean);
+      // Esperado: /.netlify/functions/updateUser/:id
+      const last = segments[segments.length - 1];
+      const maybeId = last && last !== 'updateUser' ? last : null;
+      userId = maybeId;
+    }
     
     if (!userId) {
       return {
@@ -27,7 +38,8 @@ exports.handler = async function(event, context) {
       };
     }
 
-    const { name, email, role, birthDate, photoUrl, phone } = JSON.parse(event.body);
+    const parsed = event.body ? JSON.parse(event.body) : {};
+    const { name, email, role, birthDate, photoUrl, phone } = parsed;
 
     // Validações flexíveis: permitir atualização parcial
     if (role && role !== 'ADMIN' && role !== 'MEMBER') {
@@ -81,13 +93,33 @@ exports.handler = async function(event, context) {
     if (photoUrl !== undefined) patchBody.photo_url = photoUrl || null;
     if (phone !== undefined) patchBody.phone = phone || null;
 
-    // Se nenhum campo foi fornecido
+    // Se nenhum campo foi fornecido, retorne representação atual para evitar 400 desnecessário
     const keysToUpdate = Object.keys(patchBody).filter(k => k !== 'updated_at');
     if (keysToUpdate.length === 0) {
+      const existingFull = await supabaseFetch('/users', {
+        params: {
+          select: '*',
+          id: `eq.${userId}`,
+          limit: '1'
+        }
+      });
+      const row = Array.isArray(existingFull) ? existingFull[0] : existingFull;
+      const user = {
+        id: row.id,
+        name: row.name,
+        email: row.email,
+        role: row.role,
+        birthDate: row.birth_date || null,
+        photoUrl: row.photo_url || null,
+        phone: row.phone || null,
+        ministryEntryDate: row.ministry_entry_date,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at
+      };
       return {
-        statusCode: 400,
+        statusCode: 200,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Nenhum campo para atualizar' }),
+        body: JSON.stringify({ user }),
       };
     }
 
