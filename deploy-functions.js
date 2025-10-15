@@ -20,8 +20,8 @@ try {
   console.log('✅ Deploy concluído!');
   console.log('🌐 Suas funções estão disponíveis em:');
   console.log('   - https://exaltart.netlify.app/.netlify/functions/getEvents');
-  console.log('   - https://exaltart.netlify.app/.netlify/functions/auth/login');
-  console.log('   - https://exaltart.netlify.app/.netlify/functions/auth/register');
+  console.log('   - https://exaltart.netlify.app/.netlify/functions/auth-login');
+  console.log('   - https://exaltart.netlify.app/.netlify/functions/auth-register');
   console.log('   - E todas as outras funções...');
 
 } catch (error) {

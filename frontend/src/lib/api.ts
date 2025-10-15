@@ -55,21 +55,21 @@ const makeRequest = async (url: string, options: RequestInit = {}) => {
 // Auth API
 export const authApi = {
   login: async (data: LoginRequest): Promise<AuthResponse> => {
-    return await makeRequest(`${NETLIFY_FUNCTIONS_BASE}/auth/login`, {
+    return await makeRequest(`${NETLIFY_FUNCTIONS_BASE}/auth-login`, {
       method: 'POST',
       body: JSON.stringify(data)
     })
   },
 
   register: async (data: RegisterRequest): Promise<AuthResponse> => {
-    return await makeRequest(`${NETLIFY_FUNCTIONS_BASE}/auth/register`, {
+    return await makeRequest(`${NETLIFY_FUNCTIONS_BASE}/auth-register`, {
       method: 'POST',
       body: JSON.stringify(data)
     })
   },
 
   getMe: async (): Promise<{ user: User }> => {
-    return await makeRequest(`${NETLIFY_FUNCTIONS_BASE}/auth/me`)
+    return await makeRequest(`${NETLIFY_FUNCTIONS_BASE}/auth-me`)
   }
 }
 
