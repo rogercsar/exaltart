@@ -490,7 +490,7 @@ export default function Finances() {
                   </TableCell>
                   <TableCell>{transaction.category || '-'}</TableCell>
                   <TableCell>{formatDate(transaction.date)}</TableCell>
-                  <TableCell>{transaction.author.name}</TableCell>
+                  <TableCell>{transaction.author?.name ?? '-'}</TableCell>
                   {isAdmin && (
                     <TableCell>
                       <div className="flex space-x-2">
