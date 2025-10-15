@@ -1,14 +1,18 @@
-// netlify/functions/auth/register.js
+// netlify/functions/register.js
 
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 // O Pool gerencia múltiplas conexões com o banco de dados de forma eficiente.
+const connectionString = process.env.SUPABASE_DB_URL || process.env.AIVEN_DATABASE_URL;
+if (!connectionString) {
+  console.error('Variável de ambiente de conexão com o banco não definida (SUPABASE_DB_URL ou AIVEN_DATABASE_URL).');
+}
 const pool = new Pool({
-  connectionString: process.env.AIVEN_DATABASE_URL,
+  connectionString,
   ssl: {
-    rejectUnauthorized: false // Aiven geralmente requer SSL
+    rejectUnauthorized: false // Aiven/Supabase geralmente requerem SSL
   }
 });
 
