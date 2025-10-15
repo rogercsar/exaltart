@@ -1,0 +1,34 @@
+[build]
+  publish = "frontend/dist"
+  functions = "netlify/functions"
+
+[dev]
+  command = "npm run dev:frontend"
+  port = 3000
+  publish = "frontend/dist"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+# Redirects específicos para as funções de autenticação
+[[redirects]]
+  from = "/api/auth/login"
+  to = "/.netlify/functions/auth/login"
+  status = 200
+
+[[redirects]]
+  from = "/api/auth/register"
+  to = "/.netlify/functions/auth/register"
+  status = 200
+
+[[redirects]]
+  from = "/api/auth/me"
+  to = "/.netlify/functions/auth/me"
+  status = 200
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

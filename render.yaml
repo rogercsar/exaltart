@@ -1,0 +1,13 @@
+# Render Configuration
+# Este arquivo ajuda o Render a entender como executar sua aplicação
+
+# Build Command (opcional, já está no package.json)
+# npm run build
+
+# Start Command (opcional, já está no package.json)  
+# npm start
+
+# Node Version
+# O Render detecta automaticamente, mas você pode especificar:
+# Node.js 18.x ou superior
+

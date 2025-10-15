@@ -1,0 +1,65 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  password      String
+  birthDate     DateTime?
+  role          UserRole  @default(MEMBER)
+  ministryEntryDate DateTime  @default(now())
+  photoUrl      String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  events    Event[]
+  financialTransactions FinancialTransaction[]
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  location    String?
+  startTime   DateTime
+  endTime     DateTime
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model FinancialTransaction {
+  id          String           @id @default(cuid())
+  description String
+  amount      Float
+  type        TransactionType // INCOME or EXPENSE
+  category    String?
+  date        DateTime
+  proofUrl    String? // URL for the uploaded receipt (PDF/PNG)
+  authorId    String
+  author      User             @relation(fields: [authorId], references: [id])
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+enum UserRole {
+  ADMIN
+  MEMBER
+}
+
+enum TransactionType {
+  INCOME // Entrada
+  EXPENSE // Saída
+}
+
