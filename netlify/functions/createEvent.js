@@ -1,6 +1,7 @@
 // netlify/functions/createEvent.js
 
 const { supabaseFetch } = require('./_supabase');
+const jwt = require('jsonwebtoken');
 
 exports.handler = async function(event, context) {
   // Verificar se é um método POST
@@ -16,6 +17,36 @@ exports.handler = async function(event, context) {
 
   try {
     const { title, description, location, startTime, endTime } = JSON.parse(event.body);
+
+    // Autenticação e autorização (Admin only)
+    const authHeader = event.headers.authorization || event.headers.Authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return {
+        statusCode: 401,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ error: 'Token de autorização não fornecido' }),
+      };
+    }
+
+    let decoded;
+    try {
+      const token = authHeader.substring(7);
+      decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    } catch (error) {
+      return {
+        statusCode: 401,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ error: 'Token inválido' }),
+      };
+    }
+
+    if (!decoded || decoded.role !== 'ADMIN') {
+      return {
+        statusCode: 403,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ error: 'Permissão negada' }),
+      };
+    }
 
     // Validações básicas
     if (!title || !startTime || !endTime) {
@@ -49,18 +80,43 @@ exports.handler = async function(event, context) {
         location: location || null,
         start_time: startTime,
         end_time: endTime,
-        author_id: '1', // TODO: Usar ID do usuário autenticado
+        author_id: decoded.userId,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }
     });
+
+    const created = Array.isArray(inserted) ? inserted[0] : inserted;
+
+    // Buscar o evento criado com autor embed para alinhar ao frontend
+    const rows = await supabaseFetch('/events', {
+      params: {
+        select: 'id,title,description,location,start_time,end_time,author_id,created_at,updated_at,author:users(id,name,email)',
+        id: `eq.${created.id}`,
+        limit: '1'
+      }
+    });
+
+    const row = rows && rows[0] ? rows[0] : created;
+    const event = {
+      id: row.id,
+      title: row.title,
+      description: row.description || null,
+      location: row.location || null,
+      startTime: row.start_time,
+      endTime: row.end_time,
+      authorId: row.author_id,
+      author: row.author || undefined,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    };
 
     return {
       statusCode: 201,
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ event: Array.isArray(inserted) ? inserted[0] : inserted }),
+      body: JSON.stringify({ event }),
     };
   } catch (error) {
     console.error('Erro ao criar evento (Supabase REST):', error);

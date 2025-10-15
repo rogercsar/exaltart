@@ -1,12 +1,34 @@
 // netlify/functions/getTransactions.js
 
 const { supabaseFetch } = require('./_supabase');
+const jwt = require('jsonwebtoken');
 
 exports.handler = async function(event, context) {
   try {
+    // Autenticação (qualquer usuário autenticado)
+    const authHeader = event.headers.authorization || event.headers.Authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return {
+        statusCode: 401,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ error: 'Token de autorização não fornecido' }),
+      };
+    }
+
+    try {
+      const token = authHeader.substring(7);
+      jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    } catch (error) {
+      return {
+        statusCode: 401,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ error: 'Token inválido' }),
+      };
+    }
+
     // Filtros opcionais e paginação
     const pageNum = parseInt(event.queryStringParameters?.page || '1', 10);
-    const limitNum = parseInt(event.queryStringParameters?.limit || '100', 10);
+    const limitNum = parseInt(event.queryStringParameters?.limit || '10', 10);
     const offset = (pageNum - 1) * limitNum;
 
     const { type, category, startDate, endDate } = event.queryStringParameters || {};
@@ -19,9 +41,15 @@ exports.handler = async function(event, context) {
     };
 
     if (type) params['type'] = `eq.${type}`;
-    if (category) params['category'] = `eq.${category}`;
-    if (startDate) params['date'] = `gte.${startDate}`;
-    if (endDate) params['date'] = params['date'] ? `${params['date']},lte.${endDate}` : `lte.${endDate}`;
+    // Busca parcial e case-insensitive em categoria
+    if (category) params['category'] = `ilike.*${category}*`;
+    if (startDate && endDate) {
+      params['and'] = `(date.gte.${startDate},date.lte.${endDate})`;
+    } else if (startDate) {
+      params['date'] = `gte.${startDate}`;
+    } else if (endDate) {
+      params['date'] = `lte.${endDate}`;
+    }
 
     // Buscar via Supabase REST com count exato para paginação
     const { data: rows, headers } = await supabaseFetch('/financial_transactions', {

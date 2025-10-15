@@ -1,6 +1,7 @@
 // netlify/functions/createTransaction.js
 
 const { supabaseFetch } = require('./_supabase');
+const jwt = require('jsonwebtoken');
 
 exports.handler = async function(event, context) {
   // Verificar se é um método POST
@@ -16,6 +17,36 @@ exports.handler = async function(event, context) {
 
   try {
     const { description, amount, type, category, date, proofUrl } = JSON.parse(event.body);
+
+    // Autenticação e autorização (Admin only)
+    const authHeader = event.headers.authorization || event.headers.Authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return {
+        statusCode: 401,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ error: 'Token de autorização não fornecido' }),
+      };
+    }
+
+    let decoded;
+    try {
+      const token = authHeader.substring(7);
+      decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    } catch (error) {
+      return {
+        statusCode: 401,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ error: 'Token inválido' }),
+      };
+    }
+
+    if (!decoded || decoded.role !== 'ADMIN') {
+      return {
+        statusCode: 403,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ error: 'Permissão negada' }),
+      };
+    }
 
     // Validações básicas
     if (!description || amount === undefined || !type || !date) {
@@ -57,31 +88,38 @@ exports.handler = async function(event, context) {
         amount,
         type,
         category: category || null,
-        date,
+        date, // coluna é "date" (DATE)
         proof_url: proofUrl || null,
-        author_id: '1', // TODO: Usar ID do usuário autenticado
+        author_id: decoded.userId,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }
     });
 
-    const row = Array.isArray(inserted) ? inserted[0] : inserted;
+    const created = Array.isArray(inserted) ? inserted[0] : inserted;
+
+    // Buscar a transação criada com autor embed para alinhar ao frontend
+    const rows = await supabaseFetch('/financial_transactions', {
+      params: {
+        select: 'id,description,amount,type,category,date,proof_url,author_id,created_at,updated_at,author:users(id,name,email)',
+        id: `eq.${created.id}`,
+        limit: '1'
+      }
+    });
+
+    const row = rows && rows[0] ? rows[0] : created;
     const transaction = {
       id: row.id,
       description: row.description,
       amount: parseFloat(row.amount),
       type: row.type,
-      category: row.category,
+      category: row.category || null,
       date: row.date,
-      proofUrl: row.proof_url,
+      proofUrl: row.proof_url || null,
       authorId: row.author_id,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
-      author: {
-        id: row.author_id,
-        name: null,
-        email: null
-      }
+      author: row.author || undefined
     };
 
     return {

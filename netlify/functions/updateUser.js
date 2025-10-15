@@ -29,18 +29,8 @@ exports.handler = async function(event, context) {
 
     const { name, email, role, birthDate, photoUrl, phone } = JSON.parse(event.body);
 
-    // Validações básicas
-    if (!name || !email || !role) {
-      return {
-        statusCode: 400,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ error: 'Nome, email e função são obrigatórios' }),
-      };
-    }
-
-    if (role !== 'ADMIN' && role !== 'MEMBER') {
+    // Validações flexíveis: permitir atualização parcial
+    if (role && role !== 'ADMIN' && role !== 'MEMBER') {
       return {
         statusCode: 400,
         headers: {
@@ -62,37 +52,50 @@ exports.handler = async function(event, context) {
       };
     }
 
-    // Verificar se o email já está em uso por outro usuário
-    const emailCheck = await supabaseFetch('/users', {
-      params: {
-        select: 'id',
-        email: `eq.${email}`,
-        id: `neq.${userId}`,
-        limit: '1'
+    // Verificar se o email já está em uso por outro usuário (apenas se foi fornecido)
+    if (email) {
+      const emailCheck = await supabaseFetch('/users', {
+        params: {
+          select: 'id',
+          email: `eq.${email}`,
+          id: `neq.${userId}`,
+          limit: '1'
+        }
+      });
+      if (emailCheck && emailCheck.length > 0) {
+        return {
+          statusCode: 400,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ error: 'Email já está em uso por outro usuário' }),
+        };
       }
-    });
-    if (emailCheck && emailCheck.length > 0) {
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ error: 'Email já está em uso por outro usuário' }),
-      };
     }
 
     // Atualizar via Supabase REST
+    // Construir corpo de atualização somente com campos fornecidos
+    const patchBody = { updated_at: new Date().toISOString() };
+    if (name !== undefined) patchBody.name = name;
+    if (email !== undefined) patchBody.email = email;
+    if (role !== undefined) patchBody.role = role;
+    if (birthDate !== undefined) patchBody.birth_date = birthDate || null;
+    if (photoUrl !== undefined) patchBody.photo_url = photoUrl || null;
+    if (phone !== undefined) patchBody.phone = phone || null;
+
+    // Se nenhum campo foi fornecido
+    const keysToUpdate = Object.keys(patchBody).filter(k => k !== 'updated_at');
+    if (keysToUpdate.length === 0) {
+      return {
+        statusCode: 400,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ error: 'Nenhum campo para atualizar' }),
+      };
+    }
+
     const updatedRows = await supabaseFetch('/users', {
       method: 'PATCH',
       params: { id: `eq.${userId}` },
       preferRepresentation: true,
-      body: {
-        name,
-        email,
-        role,
-        birth_date: birthDate || null,
-        photo_url: photoUrl || null,
-        phone: phone || null,
-        updated_at: new Date().toISOString()
-      }
+      body: patchBody
     });
 
     const row = Array.isArray(updatedRows) ? updatedRows[0] : updatedRows;
