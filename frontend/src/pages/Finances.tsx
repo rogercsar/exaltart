@@ -201,6 +201,18 @@ export default function Finances() {
     return new Date(dateString).toLocaleDateString('pt-BR')
   }
 
+  const handleProofFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null
+    setProofFile(file)
+    if (file && file.type.startsWith('image/')) {
+      const url = URL.createObjectURL(file)
+      setProofPreview(url)
+    } else {
+      setProofPreview(null)
+
+    }
+  }
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -508,22 +520,5 @@ export default function Finances() {
     </div>
   )
 }
-  const handleProofFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] || null
-    setProofFile(file)
-    if (file && file.type.startsWith('image/')) {
-      const url = URL.createObjectURL(file)
-      setProofPreview(url)
-    } else {
-      setProofPreview(null as any)
-
-    }
-  }
-function setProofFile(file: File | null) {
-  throw new Error('Function not implemented.')
-}
-
-function setProofPreview(url: string) {
-  throw new Error('Function not implemented.')
-}
+// Removidas funções de stub: os setters reais são definidos via useState no topo do componente.
 

@@ -21,7 +21,7 @@ export default function Events() {
   const [editingEvent, setEditingEvent] = useState<Event | null>(null)
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false)
   const [shareMessage, setShareMessage] = useState('')
-  const [shareEvent, setShareEvent] = useState<Event | null>(null)
+  const [, setShareEvent] = useState<Event | null>(null)
   const [formData, setFormData] = useState({
     title: '',
     description: '',
