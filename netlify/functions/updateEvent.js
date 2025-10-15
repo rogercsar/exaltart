@@ -68,8 +68,8 @@ exports.handler = async function(event, context) {
       }
     });
 
-    const eventRow = Array.isArray(updated) ? updated[0] : updated;
-    if (!eventRow) {
+  const eventRow = Array.isArray(updated) ? updated[0] : updated;
+  if (!eventRow) {
       return {
         statusCode: 404,
         headers: {
@@ -79,12 +79,35 @@ exports.handler = async function(event, context) {
       };
     }
 
+    // Buscar a representação completa com autor e normalizar campos
+    const fetched = await supabaseFetch('/events', {
+      params: {
+        select: 'id,title,description,location,start_time,end_time,author_id,created_at,updated_at,author:users(id,name,email)',
+        id: `eq.${eventRow.id}`,
+        limit: '1'
+      }
+    });
+
+    const fullRow = Array.isArray(fetched) ? fetched[0] : fetched;
+    const eventData = {
+      id: fullRow.id,
+      title: fullRow.title,
+      description: fullRow.description || null,
+      location: fullRow.location || null,
+      startTime: fullRow.start_time,
+      endTime: fullRow.end_time,
+      authorId: fullRow.author_id,
+      author: fullRow.author || { id: fullRow.author_id, name: null, email: null },
+      createdAt: fullRow.created_at,
+      updatedAt: fullRow.updated_at
+    };
+
     return {
       statusCode: 200,
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ event: eventRow }),
+      body: JSON.stringify({ event: eventData }),
     };
   } catch (error) {
     console.error('Erro ao atualizar evento (Supabase REST):', error);
