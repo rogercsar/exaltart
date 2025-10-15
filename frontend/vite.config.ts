@@ -11,7 +11,7 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3000,
+    // Use default Vite port (5173) to avoid conflicts with Netlify Dev
     strictPort: true,
     proxy: {
       '/api': {

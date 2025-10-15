@@ -13,6 +13,8 @@ npm install -g netlify-cli
 ### 2. Executar o projeto com Netlify Dev
 ```bash
 npm run dev:netlify
+# Em monorepos, o CLI pode pedir para escolher o site.
+# O script já usa --filter exaltart-frontend para evitar prompts.
 ```
 
 ### 3. Configurar Variáveis de Ambiente
