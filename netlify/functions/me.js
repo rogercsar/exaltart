@@ -1,11 +1,10 @@
 // netlify/functions/me.js
 
 const jwt = require('jsonwebtoken');
-const { createPoolOrThrow } = require('./_db');
+const { supabaseFetch } = require('./_supabase');
 
 exports.handler = async function(event, context) {
   try {
-    const pool = await createPoolOrThrow();
 
     // Verificar token de autorização
     const authHeader = event.headers.authorization || event.headers.Authorization;
@@ -36,17 +35,16 @@ exports.handler = async function(event, context) {
       };
     }
 
-    const client = await pool.connect();
-    
-    // Buscar dados do usuário
-    const result = await client.query(
-      'SELECT id, name, email, role, birth_date, photo_url, ministry_entry_date, created_at, updated_at FROM users WHERE id = $1',
-      [decoded.userId]
-    );
-    
-    client.release();
+    // Buscar dados do usuário via Supabase REST
+    const rows = await supabaseFetch('/users', {
+      params: {
+        select: 'id,name,email,role,birth_date,photo_url,ministry_entry_date,created_at,updated_at',
+        id: `eq.${decoded.userId}`,
+        limit: '1'
+      }
+    });
 
-    if (result.rows.length === 0) {
+    if (!rows || rows.length === 0) {
       return {
         statusCode: 404,
         headers: {
@@ -56,7 +54,7 @@ exports.handler = async function(event, context) {
       };
     }
 
-    const user = result.rows[0];
+    const user = rows[0];
 
     return {
       statusCode: 200,

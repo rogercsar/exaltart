@@ -1,6 +1,6 @@
 // netlify/functions/deleteUser.js
 
-const { createPoolOrThrow } = require('./_db');
+const { supabaseFetch } = require('./_supabase');
 
 exports.handler = async function(event, context) {
   // Verificar se é um método DELETE
@@ -27,14 +27,12 @@ exports.handler = async function(event, context) {
       };
     }
 
-    const pool = await createPoolOrThrow();
-    const client = await pool.connect();
+    // Verificar se o usuário existe via Supabase REST
+    const existing = await supabaseFetch('/users', {
+      params: { select: 'id', id: `eq.${userId}`, limit: '1' }
+    });
     
-    // Verificar se o usuário existe
-    const existingUser = await client.query('SELECT id FROM users WHERE id = $1', [userId]);
-    
-    if (existingUser.rows.length === 0) {
-      client.release();
+    if (!existing || existing.length === 0) {
       return {
         statusCode: 404,
         headers: {
@@ -43,11 +41,12 @@ exports.handler = async function(event, context) {
         body: JSON.stringify({ error: 'Usuário não encontrado' }),
       };
     }
-    
-    // Deletar o usuário
-    await client.query('DELETE FROM users WHERE id = $1', [userId]);
-    
-    client.release();
+
+    // Deletar via Supabase REST (idempotente)
+    await supabaseFetch('/users', {
+      method: 'DELETE',
+      params: { id: `eq.${userId}` }
+    });
 
     return {
       statusCode: 200,

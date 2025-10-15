@@ -1,6 +1,6 @@
 // netlify/functions/deleteTransaction.js
 
-const { createPoolOrThrow } = require('./_db');
+const { supabaseFetch } = require('./_supabase');
 
 exports.handler = async function(event, context) {
   // Verificar se é um método DELETE
@@ -27,27 +27,12 @@ exports.handler = async function(event, context) {
       };
     }
 
-    const pool = await createPoolOrThrow();
-    const client = await pool.connect();
-    
-    // Verificar se a transação existe
-    const existingTransaction = await client.query('SELECT id FROM financial_transactions WHERE id = $1', [transactionId]);
-    
-    if (existingTransaction.rows.length === 0) {
-      client.release();
-      return {
-        statusCode: 404,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ error: 'Transação não encontrada' }),
-      };
-    }
-    
-    // Deletar a transação
-    await client.query('DELETE FROM financial_transactions WHERE id = $1', [transactionId]);
-    
-    client.release();
+    // Deletar via Supabase REST (idempotente)
+    // Supabase retorna 204 mesmo se o recurso não existir
+    await supabaseFetch('/financial_transactions', {
+      method: 'DELETE',
+      params: { id: `eq.${transactionId}` }
+    });
 
     return {
       statusCode: 200,
@@ -57,7 +42,7 @@ exports.handler = async function(event, context) {
       body: JSON.stringify({ message: 'Transação excluída com sucesso' }),
     };
   } catch (error) {
-    console.error('Erro ao deletar transação:', error);
+    console.error('Erro ao deletar transação (Supabase REST):', error);
     return {
       statusCode: 500,
       headers: {

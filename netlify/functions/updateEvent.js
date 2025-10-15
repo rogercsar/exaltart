@@ -1,6 +1,6 @@
 // netlify/functions/updateEvent.js
 
-const { createPoolOrThrow } = require('./_db');
+const { supabaseFetch } = require('./_supabase');
 
 exports.handler = async function(event, context) {
   // Verificar se é um método PUT
@@ -51,14 +51,25 @@ exports.handler = async function(event, context) {
       };
     }
 
-    const pool = await createPoolOrThrow();
-    const client = await pool.connect();
-    
-    // Verificar se o evento existe
-    const existingEvent = await client.query('SELECT id FROM events WHERE id = $1', [eventId]);
-    
-    if (existingEvent.rows.length === 0) {
-      client.release();
+    // Atualizar via Supabase REST (PATCH com filtro por id)
+    const updated = await supabaseFetch('/events', {
+      method: 'PATCH',
+      preferRepresentation: true,
+      params: {
+        id: `eq.${eventId}`
+      },
+      body: {
+        title,
+        description: description || null,
+        location: location || null,
+        start_time: startTime,
+        end_time: endTime,
+        updated_at: new Date().toISOString()
+      }
+    });
+
+    const eventRow = Array.isArray(updated) ? updated[0] : updated;
+    if (!eventRow) {
       return {
         statusCode: 404,
         headers: {
@@ -67,27 +78,16 @@ exports.handler = async function(event, context) {
         body: JSON.stringify({ error: 'Evento não encontrado' }),
       };
     }
-    
-    // Atualizar o evento
-    const result = await client.query(
-      `UPDATE events 
-       SET title = $1, description = $2, location = $3, start_time = $4, end_time = $5, updated_at = NOW()
-       WHERE id = $6
-       RETURNING *`,
-      [title, description || null, location || null, startTime, endTime, eventId]
-    );
-    
-    client.release();
 
     return {
       statusCode: 200,
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ event: result.rows[0] }),
+      body: JSON.stringify({ event: eventRow }),
     };
   } catch (error) {
-    console.error('Erro ao atualizar evento:', error);
+    console.error('Erro ao atualizar evento (Supabase REST):', error);
     return {
       statusCode: 500,
       headers: {

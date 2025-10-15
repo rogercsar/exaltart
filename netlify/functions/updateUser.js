@@ -1,6 +1,6 @@
 // netlify/functions/updateUser.js
 
-const { createPoolOrThrow } = require('./_db');
+const { supabaseFetch } = require('./_supabase');
 
 exports.handler = async function(event, context) {
   // Verificar se é um método PUT
@@ -50,54 +50,69 @@ exports.handler = async function(event, context) {
       };
     }
 
-    const pool = await createPoolOrThrow();
-    const client = await pool.connect();
-    
-    // Verificar se o usuário existe
-    const existingUser = await client.query('SELECT id FROM users WHERE id = $1', [userId]);
-    
-    if (existingUser.rows.length === 0) {
-      client.release();
+    // Verificar se o usuário existe via Supabase REST
+    const existing = await supabaseFetch('/users', {
+      params: { select: 'id', id: `eq.${userId}`, limit: '1' }
+    });
+    if (!existing || existing.length === 0) {
       return {
         statusCode: 404,
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ error: 'Usuário não encontrado' }),
       };
     }
 
-    // Verificar se o email já existe em outro usuário
-    const emailCheck = await client.query('SELECT id FROM users WHERE email = $1 AND id != $2', [email, userId]);
-    
-    if (emailCheck.rows.length > 0) {
-      client.release();
+    // Verificar se o email já está em uso por outro usuário
+    const emailCheck = await supabaseFetch('/users', {
+      params: {
+        select: 'id',
+        email: `eq.${email}`,
+        id: `neq.${userId}`,
+        limit: '1'
+      }
+    });
+    if (emailCheck && emailCheck.length > 0) {
       return {
         statusCode: 400,
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ error: 'Email já está em uso por outro usuário' }),
       };
     }
-    
-    // Atualizar o usuário
-    const result = await client.query(
-      `UPDATE users 
-       SET name = $1, email = $2, role = $3, birth_date = $4, photo_url = $5, phone = $6, updated_at = NOW()
-       WHERE id = $7
-       RETURNING *`,
-      [name, email, role, birthDate || null, photoUrl || null, phone || null, userId]
-    );
-    
-    client.release();
+
+    // Atualizar via Supabase REST
+    const updatedRows = await supabaseFetch('/users', {
+      method: 'PATCH',
+      params: { id: `eq.${userId}` },
+      preferRepresentation: true,
+      body: {
+        name,
+        email,
+        role,
+        birth_date: birthDate || null,
+        photo_url: photoUrl || null,
+        phone: phone || null,
+        updated_at: new Date().toISOString()
+      }
+    });
+
+    const row = Array.isArray(updatedRows) ? updatedRows[0] : updatedRows;
+    const user = {
+      id: row.id,
+      name: row.name,
+      email: row.email,
+      role: row.role,
+      birthDate: row.birth_date || null,
+      photoUrl: row.photo_url || null,
+      phone: row.phone || null,
+      ministryEntryDate: row.ministry_entry_date,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    };
 
     return {
       statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ user: result.rows[0] }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user }),
     };
   } catch (error) {
     console.error('Erro ao atualizar usuário:', error);

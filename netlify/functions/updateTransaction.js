@@ -1,6 +1,6 @@
 // netlify/functions/updateTransaction.js
 
-const { createPoolOrThrow } = require('./_db');
+const { supabaseFetch } = require('./_supabase');
 
 exports.handler = async function(event, context) {
   // Verificar se é um método PUT
@@ -60,14 +60,11 @@ exports.handler = async function(event, context) {
       };
     }
 
-    const pool = await createPoolOrThrow();
-    const client = await pool.connect();
-    
-    // Verificar se a transação existe
-    const existingTransaction = await client.query('SELECT id FROM financial_transactions WHERE id = $1', [transactionId]);
-    
-    if (existingTransaction.rows.length === 0) {
-      client.release();
+    // Verificar existência via Supabase
+    const existing = await supabaseFetch('/financial_transactions', {
+      params: { id: `eq.${transactionId}`, select: 'id' }
+    });
+    if (!Array.isArray(existing) || existing.length === 0) {
       return {
         statusCode: 404,
         headers: {
@@ -76,24 +73,48 @@ exports.handler = async function(event, context) {
         body: JSON.stringify({ error: 'Transação não encontrada' }),
       };
     }
-    
-    // Atualizar a transação
-    const result = await client.query(
-      `UPDATE financial_transactions 
-       SET description = $1, amount = $2, type = $3, category = $4, date = $5, proof_url = $6, updated_at = NOW()
-       WHERE id = $7
-       RETURNING *`,
-      [description, amount, type, category || null, date, proofUrl || null, transactionId]
-    );
-    
-    client.release();
+
+    // Atualizar via Supabase REST
+    const updated = await supabaseFetch('/financial_transactions', {
+      method: 'PATCH',
+      preferRepresentation: true,
+      params: { id: `eq.${transactionId}` },
+      body: {
+        description,
+        amount,
+        type,
+        category: category || null,
+        date,
+        proof_url: proofUrl || null,
+        updated_at: new Date().toISOString()
+      }
+    });
+
+    const row = Array.isArray(updated) ? updated[0] : updated;
+    const transaction = {
+      id: row.id,
+      description: row.description,
+      amount: parseFloat(row.amount),
+      type: row.type,
+      category: row.category,
+      date: row.date,
+      proofUrl: row.proof_url,
+      authorId: row.author_id,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+      author: {
+        id: row.author_id,
+        name: null,
+        email: null
+      }
+    };
 
     return {
       statusCode: 200,
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ transaction: result.rows[0] }),
+      body: JSON.stringify({ transaction }),
     };
   } catch (error) {
     console.error('Erro ao atualizar transação:', error);

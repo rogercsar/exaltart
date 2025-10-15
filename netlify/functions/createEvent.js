@@ -1,6 +1,6 @@
 // netlify/functions/createEvent.js
 
-const { createPoolOrThrow } = require('./_db');
+const { supabaseFetch } = require('./_supabase');
 
 exports.handler = async function(event, context) {
   // Verificar se é um método POST
@@ -39,28 +39,31 @@ exports.handler = async function(event, context) {
       };
     }
 
-    const pool = await createPoolOrThrow();
-    const client = await pool.connect();
-    
-    // Inserir o novo evento
-    const result = await client.query(
-      `INSERT INTO events (title, description, location, start_time, end_time, author_id, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
-       RETURNING *`,
-      [title, description || null, location || null, startTime, endTime, '1'] // TODO: Usar ID do usuário autenticado
-    );
-    
-    client.release();
+    // Inserir o novo evento via Supabase REST
+    const inserted = await supabaseFetch('/events', {
+      method: 'POST',
+      preferRepresentation: true,
+      body: {
+        title,
+        description: description || null,
+        location: location || null,
+        start_time: startTime,
+        end_time: endTime,
+        author_id: '1', // TODO: Usar ID do usuário autenticado
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+    });
 
     return {
       statusCode: 201,
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ event: result.rows[0] }),
+      body: JSON.stringify({ event: Array.isArray(inserted) ? inserted[0] : inserted }),
     };
   } catch (error) {
-    console.error('Erro ao criar evento:', error);
+    console.error('Erro ao criar evento (Supabase REST):', error);
     return {
       statusCode: 500,
       headers: {

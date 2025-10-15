@@ -1,6 +1,6 @@
 // netlify/functions/createTransaction.js
 
-const { createPoolOrThrow } = require('./_db');
+const { supabaseFetch } = require('./_supabase');
 
 exports.handler = async function(event, context) {
   // Verificar se é um método POST
@@ -48,25 +48,48 @@ exports.handler = async function(event, context) {
       };
     }
 
-    const pool = await createPoolOrThrow();
-    const client = await pool.connect();
-    
-    // Inserir a nova transação
-    const result = await client.query(
-      `INSERT INTO financial_transactions (description, amount, type, category, date, proof_url, author_id, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
-       RETURNING *`,
-      [description, amount, type, category || null, date, proofUrl || null, '1'] // TODO: Usar ID do usuário autenticado
-    );
-    
-    client.release();
+    // Inserir via Supabase REST
+    const inserted = await supabaseFetch('/financial_transactions', {
+      method: 'POST',
+      preferRepresentation: true,
+      body: {
+        description,
+        amount,
+        type,
+        category: category || null,
+        date,
+        proof_url: proofUrl || null,
+        author_id: '1', // TODO: Usar ID do usuário autenticado
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+    });
+
+    const row = Array.isArray(inserted) ? inserted[0] : inserted;
+    const transaction = {
+      id: row.id,
+      description: row.description,
+      amount: parseFloat(row.amount),
+      type: row.type,
+      category: row.category,
+      date: row.date,
+      proofUrl: row.proof_url,
+      authorId: row.author_id,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+      author: {
+        id: row.author_id,
+        name: null,
+        email: null
+      }
+    };
 
     return {
       statusCode: 201,
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ transaction: result.rows[0] }),
+      body: JSON.stringify({ transaction }),
     };
   } catch (error) {
     console.error('Erro ao criar transação:', error);

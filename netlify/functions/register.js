@@ -2,7 +2,7 @@
 
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { createPoolOrThrow } = require('./_db');
+const { supabaseFetch } = require('./_supabase');
 
 exports.handler = async function(event, context) {
   // Verificar se é um método POST
@@ -17,8 +17,6 @@ exports.handler = async function(event, context) {
   }
 
   try {
-    const pool = await createPoolOrThrow();
-
     const { name, email, password, role = 'MEMBER' } = JSON.parse(event.body);
 
     // Validações básicas
@@ -55,16 +53,16 @@ exports.handler = async function(event, context) {
       };
     }
 
-    const client = await pool.connect();
-    
-    // Verificar se o email já existe
-    const existingUser = await client.query(
-      'SELECT id FROM users WHERE email = $1',
-      [email]
-    );
-    
-    if (existingUser.rows.length > 0) {
-      client.release();
+    // Verificar se o email já existe via Supabase REST
+    const existing = await supabaseFetch('/users', {
+      params: {
+        select: 'id',
+        email: `eq.${email}`,
+        limit: '1'
+      }
+    });
+
+    if (existing && existing.length > 0) {
       return {
         statusCode: 400,
         headers: {
@@ -77,17 +75,22 @@ exports.handler = async function(event, context) {
     // Hash da senha
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Criar usuário
-    const result = await client.query(
-      `INSERT INTO users (name, email, password, role, ministry_entry_date, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, NOW(), NOW(), NOW())
-       RETURNING id, name, email, role, ministry_entry_date, created_at`,
-      [name, email, hashedPassword, role]
-    );
-    
-    client.release();
+    // Criar usuário via Supabase REST
+    const inserted = await supabaseFetch('/users', {
+      method: 'POST',
+      body: {
+        name,
+        email,
+        password: hashedPassword,
+        role,
+        ministry_entry_date: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      },
+      preferRepresentation: true
+    });
 
-    const newUser = result.rows[0];
+    const newUser = Array.isArray(inserted) ? inserted[0] : inserted;
 
     // Gerar token JWT
     const token = jwt.sign(

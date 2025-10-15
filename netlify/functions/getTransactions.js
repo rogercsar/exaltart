@@ -1,90 +1,46 @@
 // netlify/functions/getTransactions.js
 
-const { createPoolOrThrow } = require('./_db');
+const { supabaseFetch } = require('./_supabase');
 
 exports.handler = async function(event, context) {
   try {
-    const pool = await createPoolOrThrow();
-    const client = await pool.connect();
-    
-    // Construir query com filtros opcionais
-    let query = `
-      SELECT t.*, u.name as author_name, u.email as author_email
-      FROM financial_transactions t
-      LEFT JOIN users u ON t.author_id = u.id
-    `;
-    
-    const conditions = [];
-    const params = [];
-    let paramCount = 0;
-
-    // Filtros opcionais
-    if (event.queryStringParameters) {
-      const { type, category, startDate, endDate, page = 1, limit = 100 } = event.queryStringParameters;
-      
-      if (type) {
-        paramCount++;
-        conditions.push(`t.type = $${paramCount}`);
-        params.push(type);
-      }
-      
-      if (category) {
-        paramCount++;
-        conditions.push(`t.category = $${paramCount}`);
-        params.push(category);
-      }
-      
-      if (startDate) {
-        paramCount++;
-        conditions.push(`t.date >= $${paramCount}`);
-        params.push(startDate);
-      }
-      
-      if (endDate) {
-        paramCount++;
-        conditions.push(`t.date <= $${paramCount}`);
-        params.push(endDate);
-      }
-    }
-
-    if (conditions.length > 0) {
-      query += ` WHERE ${conditions.join(' AND ')}`;
-    }
-
-    query += ` ORDER BY t.date DESC, t.created_at DESC`;
-
-    // Adicionar paginação
-    const pageNum = parseInt(event.queryStringParameters?.page || '1');
-    const limitNum = parseInt(event.queryStringParameters?.limit || '100');
+    // Filtros opcionais e paginação
+    const pageNum = parseInt(event.queryStringParameters?.page || '1', 10);
+    const limitNum = parseInt(event.queryStringParameters?.limit || '100', 10);
     const offset = (pageNum - 1) * limitNum;
-    
-    paramCount++;
-    query += ` LIMIT $${paramCount}`;
-    params.push(limitNum);
-    
-    paramCount++;
-    query += ` OFFSET $${paramCount}`;
-    params.push(offset);
 
-    const result = await client.query(query, params);
-    
-    // Contar total de registros para paginação
-    let countQuery = `
-      SELECT COUNT(*) as total
-      FROM financial_transactions t
-    `;
-    
-    if (conditions.length > 0) {
-      countQuery += ` WHERE ${conditions.join(' AND ')}`;
+    const { type, category, startDate, endDate } = event.queryStringParameters || {};
+
+    const params = {
+      select: '*,author:users(id,name,email)',
+      order: 'date.desc,created_at.desc',
+      limit: String(limitNum),
+      offset: String(offset)
+    };
+
+    if (type) params['type'] = `eq.${type}`;
+    if (category) params['category'] = `eq.${category}`;
+    if (startDate) params['date'] = `gte.${startDate}`;
+    if (endDate) params['date'] = params['date'] ? `${params['date']},lte.${endDate}` : `lte.${endDate}`;
+
+    // Buscar via Supabase REST com count exato para paginação
+    const { data: rows, headers } = await supabaseFetch('/financial_transactions', {
+      params,
+      preferCountExact: true,
+      returnMeta: true
+    });
+
+    // Extrair total do Content-Range: "start-end/total"
+    const contentRange = headers['content-range'] || headers['content-range'];
+    let total = 0;
+    if (contentRange && contentRange.includes('/')) {
+      const parts = contentRange.split('/');
+      const totalStr = parts[1];
+      total = parseInt(totalStr, 10) || 0;
     }
-    
-    const countResult = await client.query(countQuery, params.slice(0, -2)); // Remove LIMIT e OFFSET params
-    const total = parseInt(countResult.rows[0].total);
-    
-    client.release();
 
-    // Formatar resposta com dados do autor
-    const transactions = result.rows.map(row => ({
+    // Mapear resposta para o formato esperado
+    const transactions = (rows || []).map(row => ({
       id: row.id,
       description: row.description,
       amount: parseFloat(row.amount),
@@ -92,12 +48,17 @@ exports.handler = async function(event, context) {
       category: row.category,
       date: row.date,
       proofUrl: row.proof_url,
+      authorId: row.author_id,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
-      author: {
+      author: row.author ? {
+        id: row.author.id,
+        name: row.author.name,
+        email: row.author.email
+      } : {
         id: row.author_id,
-        name: row.author_name,
-        email: row.author_email
+        name: null,
+        email: null
       }
     }));
 
@@ -112,12 +73,12 @@ exports.handler = async function(event, context) {
           page: pageNum,
           limit: limitNum,
           total,
-          totalPages: Math.ceil(total / limitNum)
+          totalPages: Math.max(1, Math.ceil((total || 0) / limitNum))
         }
       }),
     };
   } catch (error) {
-    console.error('Erro ao buscar transações:', error);
+    console.error('Erro ao buscar transações (Supabase REST):', error);
     return {
       statusCode: 500,
       headers: {

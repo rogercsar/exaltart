@@ -1,6 +1,6 @@
 // netlify/functions/createUser.js
 
-const { createPoolOrThrow } = require('./_db');
+const { supabaseFetch } = require('./_supabase');
 
 exports.handler = async function(event, context) {
   // Verificar se é um método POST
@@ -38,14 +38,16 @@ exports.handler = async function(event, context) {
       };
     }
 
-    const pool = await createPoolOrThrow();
-    const client = await pool.connect();
-    
-    // Verificar se o email já existe
-    const existingUser = await client.query('SELECT id FROM users WHERE email = $1', [email]);
-    
-    if (existingUser.rows.length > 0) {
-      client.release();
+    // Verificar se o email já existe via Supabase REST
+    const existing = await supabaseFetch('/users', {
+      params: {
+        select: 'id',
+        email: `eq.${email}`,
+        limit: '1'
+      }
+    });
+
+    if (existing && existing.length > 0) {
       return {
         statusCode: 400,
         headers: {
@@ -54,26 +56,48 @@ exports.handler = async function(event, context) {
         body: JSON.stringify({ error: 'Email já está em uso' }),
       };
     }
-    
-    // Inserir o novo usuário
-    const result = await client.query(
-      `INSERT INTO users (name, email, role, birth_date, photo_url, phone, ministry_entry_date, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW(), NOW())
-       RETURNING *`,
-      [name, email, role, birthDate || null, photoUrl || null, phone || null]
-    );
-    
-    client.release();
+
+    // Inserir o novo usuário via Supabase REST
+    const inserted = await supabaseFetch('/users', {
+      method: 'POST',
+      preferRepresentation: true,
+      body: {
+        name,
+        email,
+        role,
+        birth_date: birthDate || null,
+        photo_url: photoUrl || null,
+        phone: phone || null,
+        ministry_entry_date: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }
+    });
+
+    const row = Array.isArray(inserted) ? inserted[0] : inserted;
+
+    const user = {
+      id: row.id,
+      name: row.name,
+      email: row.email,
+      role: row.role,
+      birthDate: row.birth_date || null,
+      photoUrl: row.photo_url || null,
+      phone: row.phone || null,
+      ministryEntryDate: row.ministry_entry_date,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    };
 
     return {
       statusCode: 201,
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ user: result.rows[0] }),
+      body: JSON.stringify({ user }),
     };
   } catch (error) {
-    console.error('Erro ao criar usuário:', error);
+    console.error('Erro ao criar usuário (Supabase REST):', error);
     return {
       statusCode: 500,
       headers: {

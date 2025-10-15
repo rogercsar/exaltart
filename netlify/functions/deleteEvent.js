@@ -1,6 +1,6 @@
 // netlify/functions/deleteEvent.js
 
-const { createPoolOrThrow } = require('./_db');
+const { supabaseFetch } = require('./_supabase');
 
 exports.handler = async function(event, context) {
   // Verificar se é um método DELETE
@@ -27,27 +27,14 @@ exports.handler = async function(event, context) {
       };
     }
 
-    const pool = await createPoolOrThrow();
-    const client = await pool.connect();
-    
-    // Verificar se o evento existe
-    const existingEvent = await client.query('SELECT id FROM events WHERE id = $1', [eventId]);
-    
-    if (existingEvent.rows.length === 0) {
-      client.release();
-      return {
-        statusCode: 404,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ error: 'Evento não encontrado' }),
-      };
-    }
-    
-    // Deletar o evento
-    await client.query('DELETE FROM events WHERE id = $1', [eventId]);
-    
-    client.release();
+    // Deletar via Supabase REST (DELETE com filtro por id)
+    // Se o id não existir, Supabase retorna 204 mesmo assim — tratamos como sucesso idempotente
+    await supabaseFetch('/events', {
+      method: 'DELETE',
+      params: {
+        id: `eq.${eventId}`
+      }
+    });
 
     return {
       statusCode: 200,
@@ -57,7 +44,7 @@ exports.handler = async function(event, context) {
       body: JSON.stringify({ message: 'Evento excluído com sucesso' }),
     };
   } catch (error) {
-    console.error('Erro ao deletar evento:', error);
+    console.error('Erro ao deletar evento (Supabase REST):', error);
     return {
       statusCode: 500,
       headers: {
