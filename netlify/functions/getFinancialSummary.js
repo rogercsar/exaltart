@@ -31,7 +31,8 @@ exports.handler = async function(event, context) {
     // Função helper para montar params com filtros e agregações
     const makeAggParams = (type) => {
       const p = {
-        select: 'total:sum(amount),count:count(id)',
+        // Em PostgREST, count não recebe parâmetros. Use 'count' sem '(id)'.
+        select: 'total:sum(amount),count:count',
         type: `eq.${type}`
       };
       if (startDate && endDate) {
