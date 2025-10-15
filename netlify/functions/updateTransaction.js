@@ -1,14 +1,6 @@
 // netlify/functions/updateTransaction.js
 
-const { Pool } = require('pg');
-
-// O Pool gerencia múltiplas conexões com o banco de dados de forma eficiente.
-const pool = new Pool({
-  connectionString: process.env.AIVEN_DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false // Aiven geralmente requer SSL
-  }
-});
+const { createPoolOrThrow } = require('./_db');
 
 exports.handler = async function(event, context) {
   // Verificar se é um método PUT
@@ -68,6 +60,7 @@ exports.handler = async function(event, context) {
       };
     }
 
+    const pool = await createPoolOrThrow();
     const client = await pool.connect();
     
     // Verificar se a transação existe

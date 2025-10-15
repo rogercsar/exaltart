@@ -1,14 +1,6 @@
 // netlify/functions/updateUser.js
 
-const { Pool } = require('pg');
-
-// O Pool gerencia múltiplas conexões com o banco de dados de forma eficiente.
-const pool = new Pool({
-  connectionString: process.env.SUPABASE_DB_URL || process.env.AIVEN_DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false
-  }
-});
+const { createPoolOrThrow } = require('./_db');
 
 exports.handler = async function(event, context) {
   // Verificar se é um método PUT
@@ -58,6 +50,7 @@ exports.handler = async function(event, context) {
       };
     }
 
+    const pool = await createPoolOrThrow();
     const client = await pool.connect();
     
     // Verificar se o usuário existe

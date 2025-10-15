@@ -3,18 +3,31 @@
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const dns = require('dns');
+const dnsPromises = dns.promises;
 
-// O Pool gerencia múltiplas conexões com o banco de dados de forma eficiente.
-const connectionString = process.env.SUPABASE_DB_URL || process.env.AIVEN_DATABASE_URL;
-if (!connectionString) {
-  console.error('Variável de ambiente de conexão com o banco não definida (SUPABASE_DB_URL ou AIVEN_DATABASE_URL).');
+async function normalizeConnectionString(connStr) {
+  try {
+    const url = new URL(connStr);
+    const host = url.hostname;
+    dns.setServers(['8.8.8.8', '1.1.1.1']);
+    let ip = null;
+    try {
+      const v4 = await dnsPromises.resolve4(host);
+      if (v4 && v4.length) ip = v4[0];
+    } catch (_) {
+      try {
+        const v6 = await dnsPromises.resolve6(host);
+        if (v6 && v6.length) ip = v6[0];
+      } catch (_) {}
+    }
+    if (ip) {
+      url.hostname = ip;
+      return url.toString();
+    }
+  } catch (_) {}
+  return connStr;
 }
-const pool = new Pool({
-  connectionString,
-  ssl: {
-    rejectUnauthorized: false // Aiven/Supabase geralmente requerem SSL
-  }
-});
 
 exports.handler = async function(event, context) {
   // Verificar se é um método POST
@@ -29,6 +42,21 @@ exports.handler = async function(event, context) {
   }
 
   try {
+    const rawConnStr = process.env.SUPABASE_DB_URL || process.env.AIVEN_DATABASE_URL;
+    if (!rawConnStr) {
+      console.error('Variável de ambiente de conexão com o banco não definida (SUPABASE_DB_URL ou AIVEN_DATABASE_URL).');
+      return {
+        statusCode: 500,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ error: 'Configuração do banco ausente' }),
+      };
+    }
+    const connectionString = await normalizeConnectionString(rawConnStr);
+    const pool = new Pool({
+      connectionString,
+      ssl: { rejectUnauthorized: false }
+    });
+
     const { name, email, password, role = 'MEMBER' } = JSON.parse(event.body);
 
     // Validações básicas
