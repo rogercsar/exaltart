@@ -31,7 +31,7 @@ exports.handler = async function(event, context) {
     // Função helper para montar params com filtros e agregações
     const makeAggParams = (type) => {
       const p = {
-        select: 'count:count(*),total:sum(amount)',
+        select: 'total:sum(amount),count:count(id)',
         type: `eq.${type}`
       };
       if (startDate && endDate) {
@@ -52,10 +52,10 @@ exports.handler = async function(event, context) {
     const income = (Array.isArray(incomeRows) && incomeRows[0]) || { count: 0, total: 0 };
     const expenses = (Array.isArray(expenseRows) && expenseRows[0]) || { count: 0, total: 0 };
 
-    const totalIncome = parseFloat(income.total) || 0;
-    const totalExpenses = parseFloat(expenses.total) || 0;
-    const incomeCount = parseInt(income.count) || 0;
-    const expenseCount = parseInt(expenses.count) || 0;
+    const totalIncome = income.total ? parseFloat(income.total) : 0;
+    const totalExpenses = expenses.total ? parseFloat(expenses.total) : 0;
+    const incomeCount = income.count ? parseInt(income.count) : 0;
+    const expenseCount = expenses.count ? parseInt(expenses.count) : 0;
     const balance = totalIncome - totalExpenses;
 
     return {

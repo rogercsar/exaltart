@@ -98,7 +98,7 @@ exports.handler = async function(event, context) {
     });
 
     const row = rows && rows[0] ? rows[0] : created;
-    const event = {
+    const eventData = {
       id: row.id,
       title: row.title,
       description: row.description || null,
@@ -116,7 +116,7 @@ exports.handler = async function(event, context) {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ event }),
+      body: JSON.stringify({ event: eventData }),
     };
   } catch (error) {
     console.error('Erro ao criar evento (Supabase REST):', error);
