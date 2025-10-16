@@ -17,17 +17,36 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const [eventsResponse, summaryResponse, devotionalsResponse, observationsResponse] = await Promise.all([
+        const [eventsRes, summaryRes, devotionalsRes, observationsRes] = await Promise.allSettled([
           eventsApi.getAll(),
           transactionsApi.getSummary(),
           devotionalsApi.getAll({ limit: 5 }),
           observationsApi.getAll({ limit: 5 })
         ])
-        
-        setEvents((eventsResponse.events || []).slice(0, 5)) // Show only next 5 events
-        setSummary(summaryResponse.summary)
-        setDevotionals(devotionalsResponse.data || [])
-        setObservations(observationsResponse.data || [])
+
+        if (eventsRes.status === 'fulfilled') {
+          setEvents(((eventsRes.value as any).events || []).slice(0, 5))
+        } else {
+          console.error('Erro ao carregar eventos no dashboard:', eventsRes.reason)
+        }
+
+        if (summaryRes.status === 'fulfilled') {
+          setSummary((summaryRes.value as any).summary || null)
+        } else {
+          console.error('Erro ao carregar resumo financeiro no dashboard:', summaryRes.reason)
+        }
+
+        if (devotionalsRes.status === 'fulfilled') {
+          setDevotionals(((devotionalsRes.value as any).data || []) as DevotionalPost[])
+        } else {
+          console.error('Erro ao carregar devocionais no dashboard:', devotionalsRes.reason)
+        }
+
+        if (observationsRes.status === 'fulfilled') {
+          setObservations(((observationsRes.value as any).data || []) as Observation[])
+        } else {
+          console.error('Erro ao carregar observações no dashboard:', observationsRes.reason)
+        }
       } catch (error) {
         console.error('Error fetching dashboard data:', error)
       } finally {

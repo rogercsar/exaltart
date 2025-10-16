@@ -38,7 +38,13 @@ export default function Layout({ children }: LayoutProps) {
     { name: 'Observações', href: '/observations', icon: StickyNote },
   ]
 
-  const navItems = user?.role === 'ADMIN' ? [...navigation, ...adminNavigation] : navigation
+  const filteredNavigation = user?.role === 'ADMIN'
+    ? navigation
+    : navigation.filter(n => n.name === 'Dashboard' || n.name === 'Eventos')
+
+  const navItems = user?.role === 'ADMIN'
+    ? [...filteredNavigation, ...adminNavigation]
+    : filteredNavigation
 
   const handleLogout = () => {
     logout()

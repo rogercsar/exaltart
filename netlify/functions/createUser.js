@@ -1,5 +1,6 @@
 // netlify/functions/createUser.js
 
+const bcrypt = require('bcryptjs');
 const { supabaseFetch } = require('./_supabase');
 
 exports.handler = async function(event, context) {
@@ -15,7 +16,7 @@ exports.handler = async function(event, context) {
   }
 
   try {
-    const { name, email, role, birthDate, photoUrl, phone } = JSON.parse(event.body);
+    const { name, email, role, birthDate, photoUrl, phone, password } = JSON.parse(event.body);
 
     // Validações básicas
     if (!name || !email || !role) {
@@ -36,6 +37,24 @@ exports.handler = async function(event, context) {
         },
         body: JSON.stringify({ error: 'Função deve ser ADMIN ou MEMBER' }),
       };
+    }
+
+    // Se senha foi fornecida, validar tamanho mínimo
+    let hashedPassword = null;
+    if (password !== undefined) {
+      const pwd = String(password || '').trim();
+      if (pwd && pwd.length < 6) {
+        return {
+          statusCode: 400,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ error: 'Senha deve ter pelo menos 6 caracteres' }),
+        };
+      }
+      if (pwd) {
+        hashedPassword = await bcrypt.hash(pwd, 10);
+      }
     }
 
     // Verificar se o email já existe via Supabase REST
@@ -64,6 +83,7 @@ exports.handler = async function(event, context) {
       body: {
         name,
         email,
+        password: hashedPassword,
         role,
         birth_date: birthDate || null,
         photo_url: photoUrl || null,

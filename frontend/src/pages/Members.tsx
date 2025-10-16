@@ -29,8 +29,10 @@ export default function Members() {
     role: 'MEMBER' as 'ADMIN' | 'MEMBER',
     birthDate: '',
     phone: '',
-    photoUrl: ''
+    photoUrl: '',
+    password: ''
   })
+  const [confirmPassword, setConfirmPassword] = useState('')
 
   const isAdmin = currentUser?.role === 'ADMIN'
 
@@ -60,6 +62,28 @@ export default function Members() {
     if (!isAdmin) return
 
     try {
+      // Validação de senha apenas na criação
+      if (!editingMember) {
+        const pwd = (formData.password || '').trim()
+        const cpwd = confirmPassword.trim()
+        if (pwd.length < 6) {
+          toast({
+            title: 'Senha inválida',
+            description: 'A senha deve ter pelo menos 6 caracteres.',
+            variant: 'destructive'
+          })
+          return
+        }
+        if (pwd !== cpwd) {
+          toast({
+            title: 'Senhas diferentes',
+            description: 'A confirmação deve ser igual à senha.',
+            variant: 'destructive'
+          })
+          return
+        }
+      }
+
       let photoUrl = formData.photoUrl
 
       // If a new image was selected, convert it to base64
@@ -67,9 +91,13 @@ export default function Members() {
         photoUrl = await convertImageToBase64(selectedImage)
       }
 
-      const memberData = {
+      // Monta payload e remove senha quando em edição
+      const memberData: any = {
         ...formData,
         photoUrl
+      }
+      if (editingMember) {
+        delete memberData.password
       }
 
       if (editingMember) {
@@ -107,8 +135,10 @@ export default function Members() {
       role: member.role,
       birthDate: member.birthDate || '',
       phone: member.phone || '',
-      photoUrl: member.photoUrl || ''
+      photoUrl: member.photoUrl || '',
+      password: ''
     })
+    setConfirmPassword('')
     
     // Set image preview if member has existing photo
     if (member.photoUrl) {
@@ -149,8 +179,10 @@ export default function Members() {
       role: 'MEMBER',
       birthDate: '',
       phone: '',
-      photoUrl: ''
+      photoUrl: '',
+      password: ''
     })
+    setConfirmPassword('')
     setSelectedImage(null)
     setImagePreview(null)
   }
@@ -217,7 +249,13 @@ export default function Members() {
     member.email.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return '-'
+    // Evita deslocamento de fuso para datas no formato YYYY-MM-DD (date-only)
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+      const [y, m, d] = dateString.split('-')
+      return `${d}/${m}/${y}`
+    }
     return new Date(dateString).toLocaleDateString('pt-BR')
   }
 
@@ -280,6 +318,31 @@ export default function Members() {
                     required
                   />
                 </div>
+                {!editingMember && (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="password">Senha</Label>
+                      <Input
+                        id="password"
+                        type="password"
+                        value={formData.password}
+                        onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                        placeholder="Mínimo 6 caracteres"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmPassword">Confirmar Senha</Label>
+                      <Input
+                        id="confirmPassword"
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="role">Função</Label>
                   <Select

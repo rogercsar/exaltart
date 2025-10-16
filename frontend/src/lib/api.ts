@@ -14,7 +14,9 @@ import type {
   DevotionalPost,
   CreateDevotionalRequest,
   UpdateDevotionalRequest,
-  PaginatedResponse
+  PaginatedResponse,
+  CreateUserRequest,
+  UpdateUserRequest
 } from '@/types/api'
 
 // Base URL for Netlify Functions (supports env override)
@@ -160,14 +162,14 @@ export const usersApi = {
     return await makeRequest(`${NETLIFY_FUNCTIONS_BASE}/users/${id}`)
   },
 
-  create: async (data: Partial<User>): Promise<{ user: User }> => {
+  create: async (data: CreateUserRequest): Promise<{ user: User }> => {
     return await makeRequest(`${NETLIFY_FUNCTIONS_BASE}/createUser`, {
       method: 'POST',
       body: JSON.stringify(data)
     })
   },
 
-  update: async (id: string, data: Partial<User>): Promise<{ user: User }> => {
+  update: async (id: string, data: UpdateUserRequest): Promise<{ user: User }> => {
     return await makeRequest(`${NETLIFY_FUNCTIONS_BASE}/updateUser/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data)

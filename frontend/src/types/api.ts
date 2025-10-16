@@ -12,6 +12,23 @@ export interface User {
   updatedAt: string
 }
 
+// User create/update requests
+export interface CreateUserRequest {
+  name: string
+  email: string
+  password?: string
+  role: 'ADMIN' | 'MEMBER'
+  birthDate?: string
+  phone?: string
+  photoUrl?: string
+}
+
+export interface UpdateUserRequest extends Partial<
+  Omit<CreateUserRequest, 'password' | 'role'>
+> {
+  role?: 'ADMIN' | 'MEMBER'
+}
+
 // Event types
 export interface Event {
   id: string
