@@ -33,6 +33,7 @@ export default function Members() {
     password: ''
   })
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [changePassword, setChangePassword] = useState(false)
 
   const isAdmin = currentUser?.role === 'ADMIN'
 
@@ -62,8 +63,8 @@ export default function Members() {
     if (!isAdmin) return
 
     try {
-      // Validação de senha apenas na criação
-      if (!editingMember) {
+      // Validação de senha: na criação ou quando alterar senha em edição
+      if (!editingMember || changePassword) {
         const pwd = (formData.password || '').trim()
         const cpwd = confirmPassword.trim()
         if (pwd.length < 6) {
@@ -96,7 +97,7 @@ export default function Members() {
         ...formData,
         photoUrl
       }
-      if (editingMember) {
+      if (editingMember && !changePassword) {
         delete memberData.password
       }
 
@@ -139,6 +140,7 @@ export default function Members() {
       password: ''
     })
     setConfirmPassword('')
+    setChangePassword(false)
     
     // Set image preview if member has existing photo
     if (member.photoUrl) {
@@ -183,6 +185,7 @@ export default function Members() {
       password: ''
     })
     setConfirmPassword('')
+    setChangePassword(false)
     setSelectedImage(null)
     setImagePreview(null)
   }
@@ -318,7 +321,20 @@ export default function Members() {
                     required
                   />
                 </div>
-                {!editingMember && (
+                {editingMember && (
+                  <div className="flex items-center justify-between">
+                    <Label>Senha</Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setChangePassword(prev => !prev)}
+                    >
+                      {changePassword ? 'Cancelar alteração de senha' : 'Alterar senha'}
+                    </Button>
+                  </div>
+                )}
+                {(!editingMember || changePassword) && (
                   <>
                     <div className="space-y-2">
                       <Label htmlFor="password">Senha</Label>

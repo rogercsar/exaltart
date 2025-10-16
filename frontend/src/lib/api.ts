@@ -3,6 +3,7 @@ import type {
   LoginRequest,
   RegisterRequest,
   AuthResponse,
+  ChangePasswordRequest,
   User,
   Event,
   CreateEventRequest,
@@ -77,6 +78,13 @@ export const authApi = {
 
   getMe: async (): Promise<{ user: User }> => {
     return await makeRequest(`${NETLIFY_FUNCTIONS_BASE}/me`)
+  },
+
+  changePassword: async (data: ChangePasswordRequest): Promise<{ message: string }> => {
+    return await makeRequest(`${NETLIFY_FUNCTIONS_BASE}/changePassword`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
   }
 }
 

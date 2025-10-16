@@ -24,7 +24,7 @@ export interface CreateUserRequest {
 }
 
 export interface UpdateUserRequest extends Partial<
-  Omit<CreateUserRequest, 'password' | 'role'>
+  Omit<CreateUserRequest, 'role'>
 > {
   role?: 'ADMIN' | 'MEMBER'
 }
@@ -102,6 +102,16 @@ export interface AuthResponse {
   message: string
   user: User
   token: string
+}
+
+// Password change (self-service)
+export interface ChangePasswordRequest {
+  currentPassword: string
+  newPassword: string
+}
+
+export interface ChangePasswordResponse {
+  message: string
 }
 
 // Event types

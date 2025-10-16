@@ -11,6 +11,7 @@ import Finances from '@/pages/Finances'
 import Reports from '@/pages/Reports'
 import Devotionals from '@/pages/Devotionals'
 import Observations from '@/pages/Observations'
+import Profile from '@/pages/Profile'
 
 function App() {
   return (
@@ -91,6 +92,16 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <Observations />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/profile" 
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Profile />
                 </Layout>
               </ProtectedRoute>
             } 

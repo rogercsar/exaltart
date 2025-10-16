@@ -144,6 +144,11 @@ export default function Layout({ children }: LayoutProps) {
                   <p className="font-medium text-gray-900">{user?.name}</p>
                   <p className="text-gray-500">{user?.role === 'ADMIN' ? 'Administrador' : 'Membro'}</p>
                 </div>
+                <Link to="/profile" title="Meu Perfil">
+                  <Button variant="outline" size="sm">
+                    Meu Perfil
+                  </Button>
+                </Link>
                 <Button
                   variant="ghost"
                   size="icon"

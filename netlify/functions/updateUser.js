@@ -1,5 +1,6 @@
 // netlify/functions/updateUser.js
 
+const bcrypt = require('bcryptjs');
 const { supabaseFetch } = require('./_supabase');
 
 exports.handler = async function(event, context) {
@@ -39,7 +40,7 @@ exports.handler = async function(event, context) {
     }
 
     const parsed = event.body ? JSON.parse(event.body) : {};
-    const { name, email, role, birthDate, photoUrl, phone } = parsed;
+    const { name, email, role, birthDate, photoUrl, phone, password } = parsed;
 
     // Validações flexíveis: permitir atualização parcial
     if (role && role !== 'ADMIN' && role !== 'MEMBER') {
@@ -92,6 +93,22 @@ exports.handler = async function(event, context) {
     if (birthDate !== undefined) patchBody.birth_date = birthDate || null;
     if (photoUrl !== undefined) patchBody.photo_url = photoUrl || null;
     if (phone !== undefined) patchBody.phone = phone || null;
+
+    // Atualização de senha (opcional)
+    if (password !== undefined) {
+      const pwd = String(password || '').trim();
+      if (pwd) {
+        if (pwd.length < 6) {
+          return {
+            statusCode: 400,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ error: 'Senha deve ter pelo menos 6 caracteres' }),
+          };
+        }
+        const hashed = await bcrypt.hash(pwd, 10);
+        patchBody.password = hashed;
+      }
+    }
 
     // Se nenhum campo foi fornecido, retorne representação atual para evitar 400 desnecessário
     const keysToUpdate = Object.keys(patchBody).filter(k => k !== 'updated_at');
