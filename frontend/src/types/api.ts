@@ -119,3 +119,49 @@ export interface FinancialSummary {
   expenseCount: number
 }
 
+// Devotional types
+export interface DevotionalPost {
+  id: string
+  title: string
+  content: string
+  frequency: 'WEEKLY' | 'MONTHLY'
+  publishedAt: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreateDevotionalRequest {
+  title: string
+  content: string
+  frequency: 'WEEKLY' | 'MONTHLY'
+  publishedAt?: string
+}
+
+export interface UpdateDevotionalRequest extends Partial<CreateDevotionalRequest> {}
+
+// Observation types
+export interface Observation {
+  id: string
+  title: string
+  content: string
+  category?: string | null
+  publishedAt: string
+  authorId?: string | null
+  author?: {
+    id: string
+    name: string
+    email: string
+  } | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreateObservationRequest {
+  title: string
+  content: string
+  category?: string
+  publishedAt?: string
+}
+
+export interface UpdateObservationRequest extends Partial<CreateObservationRequest> {}
+

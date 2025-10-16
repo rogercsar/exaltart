@@ -11,11 +11,16 @@ import type {
   CreateTransactionRequest,
   UpdateTransactionRequest,
   FinancialSummary,
+  DevotionalPost,
+  CreateDevotionalRequest,
+  UpdateDevotionalRequest,
   PaginatedResponse
 } from '@/types/api'
 
-// Base URL for Netlify Functions
-const NETLIFY_FUNCTIONS_BASE = '/.netlify/functions'
+// Base URL for Netlify Functions (supports env override)
+const NETLIFY_FUNCTIONS_BASE = (import.meta as any).env?.VITE_NETLIFY_BASE_URL
+  ? String((import.meta as any).env.VITE_NETLIFY_BASE_URL).replace(/\/$/, '')
+  : '/.netlify/functions'
 
 // Helper function to make fetch requests with auth
 const makeRequest = async (url: string, options: RequestInit = {}) => {
@@ -70,6 +75,78 @@ export const authApi = {
 
   getMe: async (): Promise<{ user: User }> => {
     return await makeRequest(`${NETLIFY_FUNCTIONS_BASE}/me`)
+  }
+}
+
+// Devotionals API
+export const devotionalsApi = {
+  getAll: async (params?: { page?: number; limit?: number; order?: string; q?: string; frequency?: 'WEEKLY' | 'MONTHLY'; startDate?: string; endDate?: string }): Promise<PaginatedResponse<DevotionalPost>> => {
+    const queryParams = new URLSearchParams()
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) queryParams.append(key, String(value))
+      })
+    }
+    const url = `${NETLIFY_FUNCTIONS_BASE}/getDevotionals${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
+    return await makeRequest(url)
+  },
+
+  create: async (data: CreateDevotionalRequest): Promise<{ devotional: DevotionalPost }> => {
+    return await makeRequest(`${NETLIFY_FUNCTIONS_BASE}/createDevotional`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  },
+
+  update: async (id: string, data: UpdateDevotionalRequest): Promise<{ devotional: DevotionalPost }> => {
+    const url = `${NETLIFY_FUNCTIONS_BASE}/updateDevotional?id=${encodeURIComponent(id)}`
+    return await makeRequest(url, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    })
+  },
+
+  delete: async (id: string): Promise<{ success: boolean }> => {
+    const url = `${NETLIFY_FUNCTIONS_BASE}/deleteDevotional?id=${encodeURIComponent(id)}`
+    return await makeRequest(url, {
+      method: 'DELETE'
+    })
+  }
+}
+
+// Observations API
+export const observationsApi = {
+  getAll: async (params?: { page?: number; limit?: number; order?: string; q?: string; category?: string; startDate?: string; endDate?: string }): Promise<PaginatedResponse<import('@/types/api').Observation>> => {
+    const queryParams = new URLSearchParams()
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) queryParams.append(key, String(value))
+      })
+    }
+    const url = `${NETLIFY_FUNCTIONS_BASE}/getObservations${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
+    return await makeRequest(url)
+  },
+
+  create: async (data: import('@/types/api').CreateObservationRequest): Promise<{ observation: import('@/types/api').Observation }> => {
+    return await makeRequest(`${NETLIFY_FUNCTIONS_BASE}/createObservation`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  },
+
+  update: async (id: string, data: import('@/types/api').UpdateObservationRequest): Promise<{ observation: import('@/types/api').Observation }> => {
+    const url = `${NETLIFY_FUNCTIONS_BASE}/updateObservation${id ? `?id=${encodeURIComponent(id)}` : ''}`
+    return await makeRequest(url, {
+      method: 'PATCH',
+      body: JSON.stringify(data)
+    })
+  },
+
+  delete: async (id: string): Promise<{ success: boolean }> => {
+    const url = `${NETLIFY_FUNCTIONS_BASE}/deleteObservation${id ? `?id=${encodeURIComponent(id)}` : ''}`
+    return await makeRequest(url, {
+      method: 'DELETE'
+    })
   }
 }
 

@@ -9,6 +9,8 @@ import Members from '@/pages/Members'
 import Events from '@/pages/Events'
 import Finances from '@/pages/Finances'
 import Reports from '@/pages/Reports'
+import Devotionals from '@/pages/Devotionals'
+import Observations from '@/pages/Observations'
 
 function App() {
   return (
@@ -69,6 +71,26 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <Reports />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/devotionals" 
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Devotionals />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/observations" 
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Observations />
                 </Layout>
               </ProtectedRoute>
             } 

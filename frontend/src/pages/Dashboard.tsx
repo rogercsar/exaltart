@@ -1,26 +1,33 @@
 import { useEffect, useState } from 'react'
 import { useAuthStore } from '@/stores/auth'
-import { eventsApi, transactionsApi } from '@/lib/api'
+import { eventsApi, transactionsApi, devotionalsApi, observationsApi } from '@/lib/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Calendar, DollarSign, TrendingUp } from 'lucide-react'
-import type { Event, FinancialSummary } from '@/types/api'
+import { Calendar, DollarSign, TrendingUp, BookOpen, StickyNote } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import type { Event, FinancialSummary, DevotionalPost, Observation } from '@/types/api'
 
 export default function Dashboard() {
   const { user } = useAuthStore()
   const [events, setEvents] = useState<Event[]>([])
   const [summary, setSummary] = useState<FinancialSummary | null>(null)
+  const [devotionals, setDevotionals] = useState<DevotionalPost[]>([])
+  const [observations, setObservations] = useState<Observation[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const [eventsResponse, summaryResponse] = await Promise.all([
+        const [eventsResponse, summaryResponse, devotionalsResponse, observationsResponse] = await Promise.all([
           eventsApi.getAll(),
-          transactionsApi.getSummary()
+          transactionsApi.getSummary(),
+          devotionalsApi.getAll({ limit: 5 }),
+          observationsApi.getAll({ limit: 5 })
         ])
         
         setEvents((eventsResponse.events || []).slice(0, 5)) // Show only next 5 events
         setSummary(summaryResponse.summary)
+        setDevotionals(devotionalsResponse.data || [])
+        setObservations(observationsResponse.data || [])
       } catch (error) {
         console.error('Error fetching dashboard data:', error)
       } finally {
@@ -136,7 +143,7 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* Recent Events */}
+      {/* Recent Events and Devotionals */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
@@ -204,6 +211,68 @@ export default function Dashboard() {
             ) : (
               <p className="text-sm text-gray-500">Nenhuma transação registrada</p>
             )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Observations and Devotionals Card */}
+      <div className="grid grid-cols-1 gap-6">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <div>
+              <CardTitle>Observações e Devocionais</CardTitle>
+              <CardDescription>Últimas observações registradas e devocionais publicados</CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <StickyNote className="h-5 w-5 text-yellow-600" />
+              <BookOpen className="h-5 w-5 text-primary" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <div>
+                <h4 className="text-sm font-semibold mb-2 flex items-center gap-2"><StickyNote className="h-4 w-4" /> Observações</h4>
+                {(observations || []).length === 0 ? (
+                  <p className="text-sm text-gray-500">Nenhuma observação registrada</p>
+                ) : (
+                  <div className="space-y-4">
+                    {(observations || []).map((o) => (
+                      <div key={o.id} className="space-y-1">
+                        <p className="text-sm font-medium leading-none">{o.title} {o.category ? <span className="text-xs text-muted-foreground">• {o.category}</span> : null}</p>
+                        <p className="text-sm text-muted-foreground">Registrado em {formatDate(o.publishedAt || o.createdAt)}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="mt-2 flex gap-2">
+                  <Link to="/observations" className="text-sm text-primary hover:underline">Ver observações</Link>
+                  {user?.role === 'ADMIN' && (
+                    <Link to="/observations" className="text-sm text-primary hover:underline">Inserir observação</Link>
+                  )}
+                </div>
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold mb-2 flex items-center gap-2"><BookOpen className="h-4 w-4" /> Devocionais</h4>
+                {(devotionals || []).length === 0 ? (
+                  <p className="text-sm text-gray-500">Nenhum devocional publicado</p>
+                ) : (
+                  <div className="space-y-4">
+                    {(devotionals || []).map((d) => (
+                      <div key={d.id} className="space-y-1">
+                        <p className="text-sm font-medium leading-none">{d.title}</p>
+                        <p className="text-sm text-muted-foreground">Publicado em {formatDate(d.publishedAt || d.createdAt)}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="mt-2 flex gap-2">
+                  <Link to="/devotionals" className="text-sm text-primary hover:underline">Ver devocionais</Link>
+                  {user?.role === 'ADMIN' && (
+                    <Link to="/devotionals" className="text-sm text-primary hover:underline">Inserir devocional</Link>
+                  )}
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>

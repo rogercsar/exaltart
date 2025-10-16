@@ -25,6 +25,17 @@ npm install
 
 O frontend está configurado para se conectar automaticamente com o backend através do proxy do Vite. Certifique-se de que o backend está rodando na porta 3001.
 
+#### Usando Netlify Functions (produção ou local)
+
+Para apontar o frontend para Functions de produção (ou outro ambiente), configure a variável `VITE_NETLIFY_BASE_URL` em `frontend/.env`:
+
+```env
+# Exemplo: site publicado no Netlify
+VITE_NETLIFY_BASE_URL=https://seu-site.netlify.app/.netlify/functions
+```
+
+Se a variável não for definida, o frontend usará `/.netlify/functions` por padrão (ideal para `netlify dev`).
+
 ### 3. Executar o Frontend
 
 ```bash

@@ -10,7 +10,9 @@ import {
   BarChart3, 
   LogOut,
   Menu,
-  X
+  X,
+  BookOpen,
+  StickyNote
 } from 'lucide-react'
 
 interface LayoutProps {
@@ -30,6 +32,13 @@ export default function Layout({ children }: LayoutProps) {
   const { user, logout } = useAuthStore()
   const navigate = useNavigate()
   const location = useLocation()
+
+  const adminNavigation = [
+    { name: 'Devocionais', href: '/devotionals', icon: BookOpen },
+    { name: 'Observações', href: '/observations', icon: StickyNote },
+  ]
+
+  const navItems = user?.role === 'ADMIN' ? [...navigation, ...adminNavigation] : navigation
 
   const handleLogout = () => {
     logout()
@@ -57,7 +66,7 @@ export default function Layout({ children }: LayoutProps) {
             </Button>
           </div>
           <nav className="flex-1 space-y-1 px-2 py-4">
-            {navigation.map((item) => {
+            {navItems.map((item) => {
               const Icon = item.icon
               return (
                 <Link
@@ -86,7 +95,7 @@ export default function Layout({ children }: LayoutProps) {
             <h1 className="text-xl font-bold text-primary">Exaltart</h1>
           </div>
           <nav className="flex-1 space-y-1 px-2 py-4">
-            {navigation.map((item) => {
+            {navItems.map((item) => {
               const Icon = item.icon
               return (
                 <Link
