@@ -259,6 +259,7 @@ export default function Dashboard() {
                       <div key={o.id} className="space-y-1">
                         <p className="text-sm font-medium leading-none">{o.title} {o.category ? <span className="text-xs text-muted-foreground">• {o.category}</span> : null}</p>
                         <p className="text-sm text-muted-foreground">Registrado em {formatDate(o.publishedAt || o.createdAt)}</p>
+                        <Link to={`/observations/${o.id}`} className="text-xs text-primary hover:underline">Ver detalhes</Link>
                       </div>
                     ))}
                   </div>
@@ -280,6 +281,7 @@ export default function Dashboard() {
                       <div key={d.id} className="space-y-1">
                         <p className="text-sm font-medium leading-none">{d.title}</p>
                         <p className="text-sm text-muted-foreground">Publicado em {formatDate(d.publishedAt || d.createdAt)}</p>
+                        <Link to={`/devotionals/${d.id}`} className="text-xs text-primary hover:underline">Ler mais</Link>
                       </div>
                     ))}
                   </div>

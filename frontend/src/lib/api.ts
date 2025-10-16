@@ -121,6 +121,10 @@ export const devotionalsApi = {
     return await makeRequest(url, {
       method: 'DELETE'
     })
+  },
+
+  getById: async (id: string): Promise<{ devotional: DevotionalPost }> => {
+    return await makeRequest(`${NETLIFY_FUNCTIONS_BASE}/getDevotionalById/${id}`)
   }
 }
 
@@ -157,6 +161,10 @@ export const observationsApi = {
     return await makeRequest(url, {
       method: 'DELETE'
     })
+  },
+
+  getById: async (id: string): Promise<{ observation: import('@/types/api').Observation }> => {
+    return await makeRequest(`${NETLIFY_FUNCTIONS_BASE}/getObservationById/${id}`)
   }
 }
 
@@ -199,7 +207,7 @@ export const eventsApi = {
   },
 
   getById: async (id: string): Promise<{ event: Event }> => {
-    return await makeRequest(`${NETLIFY_FUNCTIONS_BASE}/events/${id}`)
+    return await makeRequest(`${NETLIFY_FUNCTIONS_BASE}/getEventById/${id}`)
   },
 
   create: async (data: CreateEventRequest): Promise<{ event: Event }> => {
@@ -294,3 +302,5 @@ export const transactionsApi = {
     return await makeRequest(url)
   }
 }
+
+// Single item fetch APIs (métodos adicionados nos objetos acima)

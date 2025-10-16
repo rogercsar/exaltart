@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth'
 import { eventsApi } from '@/lib/api'
 import { Button } from '@/components/ui/button'
@@ -392,6 +393,11 @@ export default function Events() {
                           {event.description}
                         </div>
                       )}
+                      <div>
+                        <Link to={`/events/${event.id}`} className="text-xs text-primary hover:underline">
+                          Ver detalhes
+                        </Link>
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell>

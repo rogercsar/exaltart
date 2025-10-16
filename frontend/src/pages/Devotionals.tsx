@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth'
 import { devotionalsApi } from '@/lib/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -304,6 +305,9 @@ export default function Devotionals() {
                   </div>
                   <p className="text-sm text-muted-foreground">Publicado em {formatDate(d.publishedAt || d.createdAt)} • {d.frequency === 'WEEKLY' ? 'Semanal' : 'Mensal'}</p>
                   <p className="text-sm text-muted-foreground">{excerpt(d.content)}</p>
+                  <div>
+                    <Link to={`/devotionals/${d.id}`} className="text-xs text-primary hover:underline">Ler mais</Link>
+                  </div>
                 </div>
               ))}
               <div className="flex items-center justify-between pt-4">

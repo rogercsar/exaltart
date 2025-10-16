@@ -12,6 +12,9 @@ import Reports from '@/pages/Reports'
 import Devotionals from '@/pages/Devotionals'
 import Observations from '@/pages/Observations'
 import Profile from '@/pages/Profile'
+import EventDetails from '@/pages/EventDetails'
+import DevotionalDetails from '@/pages/DevotionalDetails'
+import ObservationDetails from '@/pages/ObservationDetails'
 
 function App() {
   return (
@@ -57,6 +60,16 @@ function App() {
             } 
           />
           <Route 
+            path="/events/:id" 
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <EventDetails />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
             path="/finances" 
             element={
               <ProtectedRoute>
@@ -87,11 +100,31 @@ function App() {
             } 
           />
           <Route 
+            path="/devotionals/:id" 
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <DevotionalDetails />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
             path="/observations" 
             element={
               <ProtectedRoute>
                 <Layout>
                   <Observations />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/observations/:id" 
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <ObservationDetails />
                 </Layout>
               </ProtectedRoute>
             } 

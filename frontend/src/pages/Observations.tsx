@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth'
 import { observationsApi } from '@/lib/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -291,6 +292,9 @@ export default function Observations() {
                     )}
                   </div>
                   <p className="text-sm text-muted-foreground">Registrado em {formatDate(o.publishedAt || o.createdAt)}{o.author?.name ? ` por ${o.author.name}` : ''}</p>
+                  <div>
+                    <Link to={`/observations/${o.id}`} className="text-xs text-primary hover:underline">Ver detalhes</Link>
+                  </div>
                 </div>
               ))}
               <div className="flex items-center justify-between pt-4">
