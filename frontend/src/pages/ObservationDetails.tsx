@@ -50,13 +50,6 @@ export default function ObservationDetails() {
     return [title, category, when, content, link].filter(Boolean).join('\n')
   }
 
-  const formatDateTime = (dateString?: string) => {
-    if (!dateString) return '-'
-    const d = new Date(dateString)
-    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) +
-      ' • ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-  }
-
   if (loading) return <p className="text-sm text-muted-foreground">Carregando observação...</p>
   if (!observation) return <p className="text-sm text-red-600">Observação não encontrada.</p>
 
