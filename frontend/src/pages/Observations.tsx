@@ -188,12 +188,12 @@ export default function Observations() {
             </div>
             <div className="space-y-2">
               <Label>Categoria</Label>
-              <Select value={categoryFilter} onValueChange={(v) => { setPage(1); setCategoryFilter(v) }}>
+              <Select value={categoryFilter} onValueChange={(v) => { setPage(1); setCategoryFilter(v === 'ALL' ? '' : v) }}>
                 <SelectTrigger>
                   <SelectValue placeholder="Todas" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas</SelectItem>
+                  <SelectItem value="ALL">Todas</SelectItem>
                   <SelectItem value="GERAL">Geral</SelectItem>
                   <SelectItem value="EQUIPE">Equipe</SelectItem>
                   <SelectItem value="ESPIRITUAL">Espiritual</SelectItem>
@@ -324,12 +324,12 @@ export default function Observations() {
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div className="space-y-2">
                 <Label>Categoria</Label>
-                <Select value={editCategory} onValueChange={(v) => setEditCategory(v)}>
+                <Select value={editCategory} onValueChange={(v) => setEditCategory(v === 'NONE' ? '' : v)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Sem categoria</SelectItem>
+                    <SelectItem value="NONE">Sem categoria</SelectItem>
                     <SelectItem value="GERAL">Geral</SelectItem>
                     <SelectItem value="EQUIPE">Equipe</SelectItem>
                     <SelectItem value="ESPIRITUAL">Espiritual</SelectItem>

@@ -204,12 +204,12 @@ export default function Devotionals() {
             </div>
             <div className="space-y-2">
               <Label>Frequência</Label>
-              <Select value={freqFilter} onValueChange={(v) => { setPage(1); setFreqFilter(v as 'WEEKLY' | 'MONTHLY') }}>
+              <Select value={freqFilter} onValueChange={(v) => { setPage(1); setFreqFilter(v === 'ALL' ? '' : (v as 'WEEKLY' | 'MONTHLY')) }}>
                 <SelectTrigger>
                   <SelectValue placeholder="Todas" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas</SelectItem>
+                  <SelectItem value="ALL">Todas</SelectItem>
                   <SelectItem value="WEEKLY">Semanal</SelectItem>
                   <SelectItem value="MONTHLY">Mensal</SelectItem>
                 </SelectContent>
