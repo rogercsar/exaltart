@@ -17,7 +17,13 @@ import type {
   UpdateDevotionalRequest,
   PaginatedResponse,
   CreateUserRequest,
-  UpdateUserRequest
+  UpdateUserRequest,
+  Rehearsal,
+  CreateRehearsalRequest,
+  UpdateRehearsalRequest,
+  AttendanceRecord,
+  SetAttendanceRequestRecord,
+  AttendanceStatus
 } from '@/types/api'
 
 // Base URL for Netlify Functions (supports env override)
@@ -303,4 +309,52 @@ export const transactionsApi = {
   }
 }
 
-// Single item fetch APIs (métodos adicionados nos objetos acima)
+// Rehearsals API
+export const rehearsalsApi = {
+  getAll: async (): Promise<{ rehearsals: Rehearsal[] }> => {
+    const rehearsals = await makeRequest(`${NETLIFY_FUNCTIONS_BASE}/getRehearsals`)
+    return { rehearsals }
+  },
+
+  getById: async (id: string): Promise<{ rehearsal: Rehearsal }> => {
+    return await makeRequest(`${NETLIFY_FUNCTIONS_BASE}/getRehearsalById/${id}`)
+  },
+
+  create: async (data: CreateRehearsalRequest): Promise<{ rehearsal: Rehearsal }> => {
+    return await makeRequest(`${NETLIFY_FUNCTIONS_BASE}/createRehearsal`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  },
+
+  update: async (id: string, data: UpdateRehearsalRequest): Promise<{ rehearsal: Rehearsal }> => {
+    return await makeRequest(`${NETLIFY_FUNCTIONS_BASE}/updateRehearsal/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    })
+  },
+
+  delete: async (id: string): Promise<{ message: string }> => {
+    return await makeRequest(`${NETLIFY_FUNCTIONS_BASE}/deleteRehearsal/${id}`, {
+      method: 'DELETE'
+    })
+  }
+}
+
+// Attendance API
+export const attendanceApi = {
+  getByRehearsal: async (rehearsalId: string): Promise<{ records: AttendanceRecord[] }> => {
+    const url = `${NETLIFY_FUNCTIONS_BASE}/getAttendanceByRehearsal?rehearsalId=${encodeURIComponent(rehearsalId)}`
+    return await makeRequest(url)
+  },
+
+  setForRehearsal: async (
+    rehearsalId: string,
+    records: SetAttendanceRequestRecord[]
+  ): Promise<{ records: AttendanceRecord[] }> => {
+    return await makeRequest(`${NETLIFY_FUNCTIONS_BASE}/setAttendance`, {
+      method: 'POST',
+      body: JSON.stringify({ rehearsalId, records })
+    })
+  }
+}

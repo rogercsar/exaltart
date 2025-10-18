@@ -30,20 +30,7 @@
   status = 200
 
 # Fallback para endpoints antigos hifenizados
-[[redirects]]
-  from = "/.netlify/functions/auth-login"
-  to = "/.netlify/functions/login"
-  status = 200
 
-[[redirects]]
-  from = "/.netlify/functions/auth-register"
-  to = "/.netlify/functions/register"
-  status = 200
-
-[[redirects]]
-  from = "/.netlify/functions/auth-me"
-  to = "/.netlify/functions/me"
-  status = 200
 
 [[redirects]]
   from = "/*"

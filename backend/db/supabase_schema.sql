@@ -118,3 +118,46 @@ end $$;
 
 -- Storage bucket (create in Supabase Storage UI): 'proofs'
 -- Set bucket to public for simple public URLs, or manage signed URLs as needed.
+
+-- Rehearsals table
+create table if not exists public.rehearsals (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  date timestamptz not null,
+  location text,
+  notes text,
+  created_by uuid references public.users(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists idx_rehearsals_date on public.rehearsals(date);
+create index if not exists idx_rehearsals_author on public.rehearsals(created_by);
+
+-- Attendance Records table
+create table if not exists public.attendance_records (
+  id uuid primary key default gen_random_uuid(),
+  rehearsal_id uuid not null references public.rehearsals(id) on delete cascade,
+  user_id uuid not null references public.users(id) on delete cascade,
+  status text not null check (status in ('PRESENT','ABSENT','LATE')),
+  note text,
+  marked_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (rehearsal_id, user_id)
+);
+
+create index if not exists idx_attendance_rehearsal on public.attendance_records(rehearsal_id);
+create index if not exists idx_attendance_user on public.attendance_records(user_id);
+
+-- Attach triggers for updated_at on new tables
+do $$
+begin
+  if not exists (select 1 from pg_trigger where tgname = 'rehearsals_set_updated_at') then
+    create trigger rehearsals_set_updated_at before update on public.rehearsals
+      for each row execute function public.set_updated_at();
+  end if;
+  if not exists (select 1 from pg_trigger where tgname = 'attendance_set_updated_at') then
+    create trigger attendance_set_updated_at before update on public.attendance_records
+      for each row execute function public.set_updated_at();
+  end if;
+end $$;

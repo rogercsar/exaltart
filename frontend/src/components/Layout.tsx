@@ -12,7 +12,9 @@ import {
   Menu,
   X,
   BookOpen,
-  StickyNote
+  StickyNote,
+  Clock,
+  UserCheck
 } from 'lucide-react'
 
 interface LayoutProps {
@@ -36,6 +38,8 @@ export default function Layout({ children }: LayoutProps) {
   const adminNavigation = [
     { name: 'Devocionais', href: '/devotionals', icon: BookOpen },
     { name: 'Observações', href: '/observations', icon: StickyNote },
+    { name: 'Ensaios', href: '/rehearsals', icon: Clock },
+    { name: 'Chamada de Presença', href: '/attendance', icon: UserCheck },
   ]
 
   const filteredNavigation = user?.role === 'ADMIN'

@@ -192,3 +192,48 @@ export interface CreateObservationRequest {
 
 export interface UpdateObservationRequest extends Partial<CreateObservationRequest> {}
 
+// Rehearsal types
+export interface Rehearsal {
+  id: string
+  title: string
+  description?: string
+  location?: string
+  date: string
+  authorId: string
+  author?: {
+    id: string
+    name: string
+    email: string
+  }
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreateRehearsalRequest {
+  title: string
+  description?: string
+  location?: string
+  date: string
+}
+
+export interface UpdateRehearsalRequest extends Partial<CreateRehearsalRequest> {}
+
+// Attendance types
+export type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'JUSTIFIED'
+
+export interface AttendanceRecord {
+  id: string
+  rehearsalId: string
+  userId: string
+  status: AttendanceStatus
+  note?: string | null
+  markedAt: string
+  updatedAt: string
+}
+
+export interface SetAttendanceRequestRecord {
+  userId: string
+  status: AttendanceStatus
+  note?: string
+}
+

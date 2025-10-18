@@ -15,6 +15,8 @@ import Profile from '@/pages/Profile'
 import EventDetails from '@/pages/EventDetails'
 import DevotionalDetails from '@/pages/DevotionalDetails'
 import ObservationDetails from '@/pages/ObservationDetails'
+import Rehearsals from '@/pages/Rehearsals'
+import Attendance from '@/pages/Attendance'
 
 function App() {
   return (
@@ -135,6 +137,36 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <Profile />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/rehearsals" 
+            element={
+              <ProtectedRoute requireAdmin>
+                <Layout>
+                  <Rehearsals />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/attendance" 
+            element={
+              <ProtectedRoute requireAdmin>
+                <Layout>
+                  <Attendance />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/attendance/:id" 
+            element={
+              <ProtectedRoute requireAdmin>
+                <Layout>
+                  <Attendance />
                 </Layout>
               </ProtectedRoute>
             } 
