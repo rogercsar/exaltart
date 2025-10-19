@@ -1,6 +1,7 @@
 // netlify/functions/createScale.js
 
 const { supabaseFetch } = require('./_supabase');
+const { createNotificationsBulk } = require('./_notifications');
 const jwt = require('jsonwebtoken');
 
 function ensureWeekEnd(weekStartStr) {
@@ -87,6 +88,35 @@ exports.handler = async function(event) {
       updatedAt: scaleRow.updated_at,
       members
     };
+
+    // Notificações: atribuições e publicação
+    if (Array.isArray(assignedMemberIds) && assignedMemberIds.length > 0) {
+      try {
+        // Atribuição de escala
+        await createNotificationsBulk(assignedMemberIds.map(uid => ({
+          userId: uid,
+          type: 'SCALE_ASSIGNMENT',
+          entityType: 'SCALE',
+          entityId: scaleRow.id,
+          title: 'Você foi atribuído à escala',
+          message: `Semana ${weekStart} até ${computedWeekEnd}`
+        })))
+
+        // Publicação da escala
+        if ((scaleRow.status || '').toUpperCase() === 'PUBLISHED') {
+          await createNotificationsBulk(assignedMemberIds.map(uid => ({
+            userId: uid,
+            type: 'SCALE_PUBLISHED',
+            entityType: 'SCALE',
+            entityId: scaleRow.id,
+            title: 'Escala publicada',
+            message: `Semana ${weekStart}–${computedWeekEnd}`
+          })))
+        }
+      } catch (err) {
+        console.error('Falha ao notificar criação de escala:', err?.message || err)
+      }
+    }
 
     return { statusCode: 201, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ scale }) };
   } catch (error) {

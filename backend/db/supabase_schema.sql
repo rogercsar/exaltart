@@ -226,3 +226,29 @@ begin
       for each row execute function public.set_updated_at();
   end if;
 end $$;
+
+-- Group shared items
+create table if not exists public.group_items (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references public.groups(id) on delete cascade,
+  title text not null,
+  description text,
+  type text not null check (type in ('LINK','FILE')),
+  url text,
+  storage_path text,
+  author_id uuid references public.users(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists idx_group_items_group on public.group_items(group_id);
+create index if not exists idx_group_items_author on public.group_items(author_id);
+
+-- Trigger for updated_at on group_items
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'group_items_set_updated_at') THEN
+    CREATE TRIGGER group_items_set_updated_at BEFORE UPDATE ON public.group_items
+      FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+  END IF;
+END $$;

@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useAuthStore } from '@/stores/auth'
-import { eventsApi, transactionsApi, devotionalsApi, observationsApi, rehearsalsApi } from '@/lib/api'
+import { eventsApi, transactionsApi, devotionalsApi, observationsApi, rehearsalsApi, notificationsApi } from '@/lib/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Calendar, DollarSign, TrendingUp, BookOpen, StickyNote } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Calendar, DollarSign, TrendingUp, BookOpen, StickyNote, Bell, Users, Clock, ListChecks } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import type { Event, FinancialSummary, DevotionalPost, Observation, Rehearsal } from '@/types/api'
+import type { Event, FinancialSummary, DevotionalPost, Observation, Rehearsal, Notification } from '@/types/api'
 
 export default function Dashboard() {
   const { user } = useAuthStore()
@@ -14,16 +15,19 @@ export default function Dashboard() {
   const [devotionals, setDevotionals] = useState<DevotionalPost[]>([])
   const [observations, setObservations] = useState<Observation[]>([])
   const [loading, setLoading] = useState(true)
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [unreadCount, setUnreadCount] = useState<number>(0)
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const [eventsRes, summaryRes, devotionalsRes, observationsRes, rehearsalsRes] = await Promise.allSettled([
+        const [eventsRes, summaryRes, devotionalsRes, observationsRes, rehearsalsRes, notificationsRes] = await Promise.allSettled([
           eventsApi.getAll(),
           transactionsApi.getSummary(),
           devotionalsApi.getAll({ limit: 5 }),
           observationsApi.getAll({ limit: 5 }),
-          rehearsalsApi.getAll()
+          rehearsalsApi.getAll(),
+          notificationsApi.getAll({ limit: 10 })
         ])
 
         if (eventsRes.status === 'fulfilled') {
@@ -55,6 +59,14 @@ export default function Dashboard() {
         } else {
           console.error('Erro ao carregar ensaios no dashboard:', rehearsalsRes.reason)
         }
+
+        if (notificationsRes.status === 'fulfilled') {
+          const notifData = notificationsRes.value as any
+          setNotifications((notifData?.notifications || []) as Notification[])
+          setUnreadCount(Number(notifData?.unreadCount || 0))
+        } else {
+          console.error('Erro ao carregar notificações no dashboard:', (notificationsRes as any)?.reason)
+        }
       } catch (error) {
         console.error('Error fetching dashboard data:', error)
       } finally {
@@ -64,6 +76,34 @@ export default function Dashboard() {
 
     fetchDashboardData()
   }, [])
+
+  const refreshNotifications = async () => {
+    try {
+      const res = await notificationsApi.getAll({ limit: 10 })
+      setNotifications(res.notifications || [])
+      setUnreadCount(Number(res.unreadCount || 0))
+    } catch (err) {
+      console.error('Erro ao atualizar notificações', err)
+    }
+  }
+
+  const handleMarkAllRead = async () => {
+    try {
+      await notificationsApi.markAllRead()
+      await refreshNotifications()
+    } catch (err) {
+      console.error('Erro ao marcar todas como lidas', err)
+    }
+  }
+
+  const handleMarkRead = async (id: string) => {
+    try {
+      await notificationsApi.markRead(id)
+      await refreshNotifications()
+    } catch (err) {
+      console.error('Erro ao marcar como lida', err)
+    }
+  }
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -103,6 +143,122 @@ export default function Dashboard() {
         <p className="text-gray-600">
           Aqui está um resumo do que está acontecendo no ministério.
         </p>
+      </div>
+
+      {/* Shortcuts and Notifications */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        {/* Quick Shortcuts */}
+        <Card className="lg:col-span-1">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2">
+              <ListChecks className="h-5 w-5" />
+              Atalhos Rápidos
+            </CardTitle>
+            <CardDescription>Acesso rápido às ações mais usadas</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-wrap gap-2">
+            <Link to="/events/create">
+              <Button size="sm" variant="secondary" className="gap-2">
+                <Calendar className="h-4 w-4" />
+                Novo Evento
+              </Button>
+            </Link>
+            <Link to="/devotionals/create">
+              <Button size="sm" variant="secondary" className="gap-2">
+                <BookOpen className="h-4 w-4" />
+                Novo Devocional
+              </Button>
+            </Link>
+            <Link to="/observations/create">
+              <Button size="sm" variant="secondary" className="gap-2">
+                <StickyNote className="h-4 w-4" />
+                Nova Observação
+              </Button>
+            </Link>
+            <Link to="/groups">
+              <Button size="sm" variant="secondary" className="gap-2">
+                <Users className="h-4 w-4" />
+                Grupos
+              </Button>
+            </Link>
+            <Link to="/scales">
+              <Button size="sm" variant="secondary" className="gap-2">
+                <Clock className="h-4 w-4" />
+                Escalas
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+
+        {/* Notifications */}
+        <Card className="lg:col-span-2">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2">
+                  <Bell className="h-5 w-5" />
+                  Notificações
+                </CardTitle>
+                {unreadCount > 0 && (
+                  <span className="rounded-full bg-red-500 px-2 py-0.5 text-xs text-white">
+                    {unreadCount} não lidas
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="outline" onClick={refreshNotifications} title="Atualizar notificações">
+                  Atualizar
+                </Button>
+                <Button size="sm" variant="secondary" onClick={handleMarkAllRead} disabled={unreadCount === 0} title="Marcar todas como lidas">
+                  Marcar todas como lidas
+                </Button>
+              </div>
+            </div>
+            <CardDescription>Últimas notificações do sistema</CardDescription>
+          </CardHeader>
+
+          <CardContent>
+            {notifications.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Sem notificações no momento.</p>
+            ) : (
+              <ul className="space-y-3">
+                {notifications.map((n) => (
+                  <li
+                    key={n.id}
+                    className={`flex items-start justify-between rounded-md border p-3 ${!n.read ? 'border-primary/40 bg-primary/5' : ''}`}
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">{n.title}</span>
+                        {!n.read && (
+                          <span className="rounded-full bg-primary px-2 py-0.5 text-xs text-white">
+                            Nova
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground">{n.message}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(n.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {!n.read && (
+                        <Button size="sm" variant="outline" onClick={() => handleMarkRead(n.id)}>
+                          Marcar como lida
+                        </Button>
+                      )}
+                      {n.entityType && n.entityId && (
+                        <Link to={`/${String(n.entityType).toLowerCase()}/${n.entityId}`}>
+                          <Button size="sm" variant="ghost">Abrir</Button>
+                        </Link>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* Stats Cards */}

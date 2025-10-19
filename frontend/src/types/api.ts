@@ -283,3 +283,53 @@ export interface CreateScaleRequest {
 
 export interface UpdateScaleRequest extends Partial<CreateScaleRequest> {}
 
+
+// Group shared items
+export type GroupItemType = 'LINK' | 'FILE'
+
+export interface GroupItem {
+  id: string
+  groupId: string
+  title: string
+  description?: string
+  type: GroupItemType
+  url?: string
+  storagePath?: string
+  authorId?: string
+  author?: { id: string; name: string; email: string } | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreateGroupItemRequest {
+  groupId: string
+  title: string
+  type: GroupItemType
+  url?: string
+  storagePath?: string
+  description?: string
+}
+
+export interface UpdateGroupItemRequest extends Partial<Omit<CreateGroupItemRequest, 'groupId'>> {}
+
+
+// Notification types
+export type NotificationType =
+  | 'GROUP_MEMBER_ADDED'
+  | 'GROUP_ITEM_PUBLISHED'
+  | 'SCALE_PUBLISHED'
+  | 'SCALE_ASSIGNMENT'
+
+export interface Notification {
+  id: string
+  userId: string
+  type: NotificationType
+  entityType?: string | null
+  entityId?: string | null
+  title: string
+  message: string
+  read: boolean
+  createdAt: string
+  readAt?: string | null
+}
+

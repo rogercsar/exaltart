@@ -19,6 +19,7 @@ import Rehearsals from '@/pages/Rehearsals'
 import Attendance from '@/pages/Attendance'
 import Groups from '@/pages/Groups'
 import Scales from '@/pages/Scales'
+import GroupDetails from '@/pages/GroupDetails'
 
 function App() {
   return (
@@ -179,6 +180,16 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <Groups />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/groups/:id" 
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <GroupDetails />
                 </Layout>
               </ProtectedRoute>
             } 

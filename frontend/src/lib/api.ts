@@ -473,3 +473,66 @@ export const attendanceApi = {
     })
   }
 }
+
+// Group Items API
+export const groupItemsApi = {
+  getByGroup: async (groupId: string): Promise<{ items: import('@/types/api').GroupItem[] }> => {
+    const url = `${NETLIFY_FUNCTIONS_BASE}/getGroupItems?groupId=${encodeURIComponent(groupId)}`
+    const raw = await makeRequest(url)
+    const items = (raw?.data || []).map((it: any) => ({
+      id: it.id,
+      groupId: it.groupId,
+      title: it.title,
+      description: it.description || '',
+      type: it.type,
+      url: it.url || undefined,
+      storagePath: it.storagePath || undefined,
+      authorId: it.authorId || undefined,
+      author: it.author || null,
+      createdAt: it.createdAt,
+      updatedAt: it.updatedAt
+    }))
+    return { items }
+  },
+
+  create: async (data: import('@/types/api').CreateGroupItemRequest): Promise<{ item: import('@/types/api').GroupItem }> => {
+    const raw = await makeRequest(`${NETLIFY_FUNCTIONS_BASE}/createGroupItem`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+    const it = raw.item
+    return { item: it }
+  },
+
+  delete: async (id: string): Promise<{ success: boolean }> => {
+    const url = `${NETLIFY_FUNCTIONS_BASE}/deleteGroupItem?id=${encodeURIComponent(id)}`
+    return await makeRequest(url, { method: 'DELETE' })
+  }
+}
+
+// Notifications API
+export const notificationsApi = {
+  getAll: async (params?: { page?: number; limit?: number; order?: string }): Promise<{ notifications: import('@/types/api').Notification[]; unreadCount: number }> => {
+    const queryParams = new URLSearchParams()
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) queryParams.append(key, String(value))
+      })
+    }
+    const url = `${NETLIFY_FUNCTIONS_BASE}/getNotifications${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
+    const raw = await makeRequest(url)
+    const notifications = (raw?.notifications || []) as import('@/types/api').Notification[]
+    const unreadCount = Number(raw?.unreadCount || 0)
+    return { notifications, unreadCount }
+  },
+
+  markRead: async (id: string): Promise<{ success: boolean }> => {
+    const url = `${NETLIFY_FUNCTIONS_BASE}/markNotificationRead?id=${encodeURIComponent(id)}`
+    return await makeRequest(url, { method: 'POST' })
+  },
+
+  markAllRead: async (): Promise<{ success: boolean }> => {
+    const url = `${NETLIFY_FUNCTIONS_BASE}/markAllNotificationsRead`
+    return await makeRequest(url, { method: 'POST' })
+  }
+}

@@ -1,6 +1,7 @@
 // netlify/functions/updateGroup.js
 
 const { supabaseFetch } = require('./_supabase');
+const { createNotificationsBulk } = require('./_notifications');
 const jwt = require('jsonwebtoken');
 
 exports.handler = async function(event) {
@@ -50,6 +51,10 @@ exports.handler = async function(event) {
 
     // Atualizar membros se enviado
     if (Array.isArray(memberIds)) {
+      // Buscar membros atuais para detectar novos
+      const prevMs = await supabaseFetch('/group_members', { params: { select: 'user_id', group_id: `eq.${groupId}` } });
+      const prevIds = new Set((prevMs || []).map(m => m.user_id));
+
       // Remove todos e insere novamente
       await supabaseFetch('/group_members', {
         method: 'DELETE',
@@ -61,6 +66,19 @@ exports.handler = async function(event) {
           method: 'POST',
           body: memberIds.map(uid => ({ group_id: groupId, user_id: uid, added_at: nowIso }))
         });
+
+        // Notificar apenas novos membros
+        const addedIds = memberIds.filter(uid => !prevIds.has(uid));
+        if (addedIds.length > 0) {
+          await createNotificationsBulk(addedIds.map(uid => ({
+            userId: uid,
+            type: 'GROUP_MEMBER_ADDED',
+            entityType: 'GROUP',
+            entityId: groupId,
+            title: `Você foi adicionado ao grupo \"${updated.name}\"`,
+            message: description ? `Descrição: ${description}` : null
+          })));
+        }
       }
     }
 

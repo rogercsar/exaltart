@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import type { User, Group } from '@/types/api'
 import { Plus, Users as UsersIcon } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 export default function Groups() {
   const { user: currentUser } = useAuthStore()
@@ -168,6 +169,11 @@ export default function Groups() {
                         {m.name}
                       </span>
                     ))}
+                  </div>
+                  <div className="mt-3">
+                    <Button asChild>
+                      <Link to={`/groups/${group.id}`}>Detalhes</Link>
+                    </Button>
                   </div>
                 </div>
               ))}

@@ -1,6 +1,7 @@
 // netlify/functions/updateScale.js
 
 const { supabaseFetch } = require('./_supabase');
+const { createNotificationsBulk } = require('./_notifications');
 const jwt = require('jsonwebtoken');
 
 exports.handler = async function(event) {
@@ -51,12 +52,29 @@ exports.handler = async function(event) {
 
     // Atualizar atribuições se enviado
     if (Array.isArray(assignedMemberIds)) {
+      // Buscar atribuições atuais para detectar novos
+      const prevAssign = await supabaseFetch('/scale_assignments', { params: { select: 'user_id', scale_id: `eq.${scaleId}` } });
+      const prevIds = new Set((prevAssign || []).map(a => a.user_id));
+
       await supabaseFetch('/scale_assignments', { method: 'DELETE', params: { scale_id: `eq.${scaleId}` } });
       if (assignedMemberIds.length > 0) {
         await supabaseFetch('/scale_assignments', {
           method: 'POST',
           body: assignedMemberIds.map(uid => ({ scale_id: scaleId, user_id: uid, created_at: nowIso, updated_at: nowIso }))
         });
+
+        // Notificar apenas novos atribuídos
+        const addedIds = assignedMemberIds.filter(uid => !prevIds.has(uid));
+        if (addedIds.length > 0) {
+          await createNotificationsBulk(addedIds.map(uid => ({
+            userId: uid,
+            type: 'SCALE_ASSIGNMENT',
+            entityType: 'SCALE',
+            entityId: scaleId,
+            title: 'Você foi atribuído à escala',
+            message: `Semana ${updated.week_start || ''}–${updated.week_end || ''}`
+          })))
+        }
       }
     }
 
@@ -68,6 +86,22 @@ exports.handler = async function(event) {
       const users = await supabaseFetch('/users', { params: { select: 'id,name,email,photo_url', id: `in.(${ids.join(',')})` } });
       const usersMap = (users || []).reduce((acc, u) => { acc[u.id] = u; return acc; }, {});
       members = (assignments || []).map(a => ({ id: a.user_id, name: usersMap[a.user_id]?.name, email: usersMap[a.user_id]?.email, photoUrl: usersMap[a.user_id]?.photo_url, viewedAt: a.viewed_at || null }));
+    }
+
+    // Notificar publicação, se aplicável
+    if ((updated.status || '').toUpperCase() === 'PUBLISHED' && ids.length > 0) {
+      try {
+        await createNotificationsBulk(ids.map(uid => ({
+          userId: uid,
+          type: 'SCALE_PUBLISHED',
+          entityType: 'SCALE',
+          entityId: updated.id,
+          title: 'Escala publicada',
+          message: `Semana ${updated.week_start || ''}–${updated.week_end || ''}`
+        })))
+      } catch (err) {
+        console.error('Falha ao notificar publicação de escala:', err?.message || err)
+      }
     }
 
     const scale = {
