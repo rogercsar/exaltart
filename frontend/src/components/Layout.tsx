@@ -95,6 +95,20 @@ export default function Layout({ children }: LayoutProps) {
               )
             })}
           </nav>
+          <div className="mt-auto border-t border-gray-200 p-4">
+            <div className="text-sm mb-3">
+              <p className="font-medium text-gray-900">{user?.name}</p>
+              <p className="text-gray-500">{user?.role === 'ADMIN' ? 'Administrador' : 'Membro'}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Link to="/profile" title="Meu Perfil" onClick={() => setSidebarOpen(false)}>
+                <Button variant="outline" size="sm">Meu Perfil</Button>
+              </Link>
+              <Button variant="ghost" size="icon" onClick={() => { handleLogout(); setSidebarOpen(false); }} title="Sair">
+                <LogOut className="h-5 w-5" />
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -123,6 +137,20 @@ export default function Layout({ children }: LayoutProps) {
               )
             })}
           </nav>
+          <div className="border-t border-gray-200 p-4">
+            <div className="text-sm mb-3">
+              <p className="font-medium text-gray-900">{user?.name}</p>
+              <p className="text-gray-500">{user?.role === 'ADMIN' ? 'Administrador' : 'Membro'}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Link to="/profile" title="Meu Perfil">
+                <Button variant="outline" size="sm">Meu Perfil</Button>
+              </Link>
+              <Button variant="ghost" size="icon" onClick={handleLogout} title="Sair">
+                <LogOut className="h-5 w-5" />
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -148,19 +176,6 @@ export default function Layout({ children }: LayoutProps) {
                   <p className="font-medium text-gray-900">{user?.name}</p>
                   <p className="text-gray-500">{user?.role === 'ADMIN' ? 'Administrador' : 'Membro'}</p>
                 </div>
-                <Link to="/profile" title="Meu Perfil">
-                  <Button variant="outline" size="sm">
-                    Meu Perfil
-                  </Button>
-                </Link>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleLogout}
-                  title="Sair"
-                >
-                  <LogOut className="h-5 w-5" />
-                </Button>
               </div>
             </div>
           </div>
