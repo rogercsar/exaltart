@@ -247,29 +247,33 @@ export default function Dashboard() {
               <p className="text-sm text-muted-foreground">Sem notificações no momento.</p>
             ) : (
               <ul className="space-y-2">
-                {notifications.map(n => (
-                  <li key={n.id} className={`flex flex-col md:flex-row items-start justify-between rounded-md border p-3 ${!n.read ? 'border-primary/40 bg-primary/5' : ''}`}>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm break-words">
-                        {n.message}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {new Date(n.createdAt).toLocaleString()}
-                      </p>
-                    </div>
-                    <div className="mt-2 md:mt-0 flex items-center gap-2 flex-wrap">
-                      {!n.read && (
-                        <Button size="sm" variant="default" onClick={() => markRead(n.id)}>
-                          Marcar como lida
-                        </Button>
-                      )}
-                      <Button size="sm" variant="outline" onClick={() => deleteNotification(n.id)}>
-                        Excluir
-                      </Button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+                 {notifications.map(n => (
+                   <li key={n.id} className={`flex flex-col md:flex-row items-start justify-between rounded-md border p-3 ${!n.read ? 'border-primary/40 bg-primary/5' : ''}`}>
+                     <div className="flex-1 min-w-0">
+                       <div className="flex items-center gap-2">
+                         <span className="text-sm font-medium">{n.title}</span>
+                         {!n.read && (
+                           <span className="rounded-full bg-primary px-2 py-0.5 text-xs text-white">Nova</span>
+                         )}
+                       </div>
+                       <p className="text-sm text-muted-foreground break-words">{n.message}</p>
+                       <p className="text-xs text-muted-foreground mt-1">{new Date(n.createdAt).toLocaleString()}</p>
+                     </div>
+                     <div className="mt-2 md:mt-0 flex items-center gap-2 flex-wrap">
+                       {!n.read && (
+                         <Button size="sm" variant="outline" onClick={() => handleMarkRead(n.id)}>
+                           Marcar como lida
+                         </Button>
+                       )}
+                       {n.entityType && n.entityId && (
+                         <Link to={`/${String(n.entityType).toLowerCase()}/${n.entityId}`}>
+                           <Button size="sm" variant="ghost">Abrir</Button>
+                         </Link>
+                       )}
+                     </div>
+                   </li>
+                 ))}
+               </ul>
             )}
           </CardContent>
         </Card>
