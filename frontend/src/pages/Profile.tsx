@@ -10,7 +10,6 @@ import { Upload, X } from 'lucide-react'
 
 export default function Profile() {
   const { user, login } = useAuthStore()
-  const token = useAuthStore.getState().token
   const { toast } = useToast()
 
   // Edit profile state
@@ -230,46 +229,38 @@ export default function Profile() {
             </div>
           </form>
 
-          <form onSubmit={handleChangePassword} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="currentPassword">Senha atual</Label>
-              <Input
-                id="currentPassword"
-                type="password"
-                placeholder="Sua senha atual"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                autoComplete="current-password"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="newPassword">Nova senha</Label>
-              <Input
-                id="newPassword"
-                type="password"
-                placeholder="Digite a nova senha"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                autoComplete="new-password"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirmar nova senha</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                placeholder="Repita a nova senha"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                autoComplete="new-password"
-              />
-            </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button type="submit" disabled={loading}>
-                {loading ? 'Alterando...' : 'Alterar senha'}
-              </Button>
-            </div>
-          </form>
+          <div className="mt-8 border-t pt-6">
+            {!changingPassword ? (
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-sm font-medium">Alterar senha</p>
+                  <p className="text-sm text-muted-foreground">Atualize sua senha com segurança.</p>
+                </div>
+                <Button variant="outline" onClick={() => setChangingPassword(true)}>Habilitar alteração</Button>
+              </div>
+            ) : (
+              <form onSubmit={handleChangePassword} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="currentPassword">Senha atual</Label>
+                    <Input id="currentPassword" type="password" placeholder="Sua senha atual" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} autoComplete="current-password" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="newPassword">Nova senha</Label>
+                    <Input id="newPassword" type="password" placeholder="Digite a nova senha" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} autoComplete="new-password" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword">Confirmar nova senha</Label>
+                    <Input id="confirmPassword" type="password" placeholder="Repita a nova senha" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} autoComplete="new-password" />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button type="button" variant="outline" onClick={() => { setChangingPassword(false); setCurrentPassword(''); setNewPassword(''); setConfirmPassword(''); }}>Cancelar</Button>
+                  <Button type="submit" disabled={loading}>{loading ? 'Alterando...' : 'Salvar nova senha'}</Button>
+                </div>
+              </form>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>

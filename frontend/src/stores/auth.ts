@@ -7,6 +7,7 @@ export interface User {
   name: string
   role: 'ADMIN' | 'MEMBER'
   birthDate?: string
+  phone?: string
   ministryEntryDate: string
   photoUrl?: string
   createdAt: string
