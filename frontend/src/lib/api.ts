@@ -207,7 +207,8 @@ export const usersApi = {
 // Events API
 export const eventsApi = {
   getAll: async (): Promise<{ events: Event[] }> => {
-    const events = await makeRequest(`${NETLIFY_FUNCTIONS_BASE}/getEvents`)
+    const raw = await makeRequest(`${NETLIFY_FUNCTIONS_BASE}/getEvents`)
+    const events = Array.isArray(raw) ? raw : (raw?.events ?? [])
     return { events }
   },
 
@@ -311,7 +312,8 @@ export const transactionsApi = {
 // Rehearsals API
 export const rehearsalsApi = {
   getAll: async (): Promise<{ rehearsals: Rehearsal[] }> => {
-    const rehearsals = await makeRequest(`${NETLIFY_FUNCTIONS_BASE}/getRehearsals`)
+    const raw = await makeRequest(`${NETLIFY_FUNCTIONS_BASE}/getRehearsals`)
+    const rehearsals = Array.isArray(raw) ? raw : (raw?.rehearsals ?? [])
     return { rehearsals }
   },
 
