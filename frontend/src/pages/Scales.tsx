@@ -43,7 +43,7 @@ export default function Scales() {
   const [savingEdit, setSavingEdit] = useState(false)
 
   const [groups, setGroups] = useState<Group[]>([])
-  const [loadingGroups, setLoadingGroups] = useState(false)
+  const [_loadingGroups, setLoadingGroups] = useState(false)
   const [groupFilter, setGroupFilter] = useState<string>('')
   const [scaleMemberViews, setScaleMemberViews] = useState<Record<string, { id: string; viewedAt?: string | null }[]>>({})
 
@@ -103,7 +103,7 @@ export default function Scales() {
 
     setCreating(true)
     try {
-      const res = await scalesApi.create({ weekStart, memberIds: [...form.memberIds] })
+      const res = await scalesApi.create({ weekStart, assignedMemberIds: [...form.memberIds] })
       const s = res.scale
       const created: Scale = {
         id: s.id,
@@ -178,6 +178,30 @@ export default function Scales() {
     }
   }
 
+  const shareWhatsApp = (scale: Scale) => {
+    try {
+      const memberNames = (members || [])
+        .filter(m => scale.assignedMemberIds.includes(m.id))
+        .map(m => m.name)
+      const msg = `Escala ${formatDate(scale.weekStart)} a ${formatDate(scale.weekEnd || scale.weekStart)}\nParticipantes: ${memberNames.join(', ')}`
+      const url = `https://wa.me/?text=${encodeURIComponent(msg)}`
+      window.open(url, '_blank')
+    } catch (err) {
+      toast({ title: 'Erro', description: 'Falha ao compartilhar no WhatsApp', variant: 'destructive' })
+    }
+  }
+
+  const notifyMembers = async (scale: Scale) => {
+    try {
+      const count = Array.isArray(scale.assignedMemberIds) ? scale.assignedMemberIds.length : 0
+      toast({ title: 'Notificação enviada', description: `Participantes notificados (simulado): ${count}.` })
+      playSuccess()
+    } catch (err) {
+      playError()
+      toast({ title: 'Erro', description: 'Falha ao enviar notificação', variant: 'destructive' })
+    }
+  }
+
   const openEdit = (scale: Scale) => {
     setEditingScaleId(scale.id)
     setEditMemberIds([...scale.assignedMemberIds])
@@ -192,7 +216,7 @@ export default function Scales() {
     if (!editingScaleId) return
     setSavingEdit(true)
     try {
-      const res = await scalesApi.update(editingScaleId, { memberIds: editMemberIds } as any)
+      const res = await scalesApi.update(editingScaleId, { assignedMemberIds: editMemberIds } as any)
       const updated = res.scale
       setScales(prev => prev.map(s => s.id === editingScaleId ? {
         id: updated.id,
@@ -372,9 +396,9 @@ export default function Scales() {
                       const viewObj = (scaleMemberViews[scale.id] || []).find(v => v.id === m.id)
                       const viewed = !!(viewObj?.viewedAt)
                       return (
-                        <span key={m.id} className="inline-flex items-center rounded-full bg-primary/10 text-primary px-2 py-1 text-xs">
+                        <span key={m.id} className="inline-flex items-center rounded-full bg-primary/10 text-primary px-2 py-1 text-xs" title={viewed ? (viewObj?.viewedAt ? `Viu em ${formatDate(viewObj.viewedAt)}` : 'Visualizou') : undefined}>
                           {m.name}
-                          {viewed && <Eye className="h-3 w-3 ml-1 text-green-600" title={viewObj?.viewedAt ? `Viu em ${formatDate(viewObj.viewedAt)}` : 'Visualizou'} />}
+                          {viewed && <Eye className="h-3 w-3 ml-1 text-green-600" />}
                         </span>
                       )
                     })}
