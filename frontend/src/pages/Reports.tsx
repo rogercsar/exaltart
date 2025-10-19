@@ -12,7 +12,8 @@ import {
   Calendar, 
   DollarSign, 
   TrendingUp, 
-  TrendingDown
+  TrendingDown,
+  ExternalLink
 } from 'lucide-react'
 import type { FinancialTransaction, FinancialSummary, Event } from '@/types/api'
 
@@ -119,6 +120,22 @@ export default function Reports() {
     })
   }
 
+  const handleOpenJson = () => {
+    try {
+      const base = (import.meta as any).env?.VITE_NETLIFY_BASE_URL
+        ? String((import.meta as any).env.VITE_NETLIFY_BASE_URL).replace(/\/$/, '')
+        : 'https://minexaltart.netlify.app/.netlify/functions'
+      const url = `${base}/getFinancialSummary?startDate=${encodeURIComponent(dateRange.startDate)}&endDate=${encodeURIComponent(dateRange.endDate)}`
+      window.open(url, '_blank', 'noopener')
+    } catch (error) {
+      toast({
+        title: 'Erro',
+        description: 'Falha ao abrir JSON do resumo financeiro',
+        variant: 'destructive'
+      })
+    }
+  }
+
   // Calculate category totals
   const categoryTotals = (transactions || []).reduce((acc, transaction) => {
     const category = transaction.category || 'Sem categoria'
@@ -160,10 +177,16 @@ export default function Reports() {
           <h1 className="text-2xl font-bold text-gray-900">Relatórios</h1>
           <p className="text-gray-600">Análise financeira e de eventos do ministério</p>
         </div>
-        <Button onClick={handleExport} disabled={!isAdmin}>
-          <Download className="h-4 w-4 mr-2" />
-          Exportar CSV
-        </Button>
+        <div className="flex items-center space-x-2">
+          <Button variant="outline" onClick={handleOpenJson}>
+            <ExternalLink className="h-4 w-4 mr-2" />
+            Abrir JSON
+          </Button>
+          <Button onClick={handleExport} disabled={!isAdmin}>
+            <Download className="h-4 w-4 mr-2" />
+            Exportar CSV
+          </Button>
+        </div>
       </div>
 
       {/* Date Range Filter */}
