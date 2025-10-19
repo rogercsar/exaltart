@@ -3,7 +3,7 @@ import { useAuthStore } from '@/stores/auth'
 import { eventsApi, transactionsApi, devotionalsApi, observationsApi, rehearsalsApi, notificationsApi } from '@/lib/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Calendar, DollarSign, TrendingUp, BookOpen, StickyNote, Bell, Users, Clock, ListChecks } from 'lucide-react'
+import { Calendar, DollarSign, TrendingUp, BookOpen, StickyNote, Bell, Users, Clock, ListChecks, RefreshCcw, CheckCheck, ExternalLink, Check } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import type { Event, FinancialSummary, DevotionalPost, Observation, Rehearsal, Notification } from '@/types/api'
 
@@ -161,12 +161,7 @@ export default function Dashboard() {
               </span>
             )}
           </Button>
-          <button
-            className="text-sm text-primary hover:underline"
-            onClick={() => document.getElementById('notifications-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-          >
-            Ver notificações
-          </button>
+          {/* Remove texto "Ver notificações" para evitar overflow no mobile */}
         </div>
       </div>
 
@@ -179,37 +174,32 @@ export default function Dashboard() {
               <ListChecks className="h-5 w-5" />
               Atalhos Rápidos
             </CardTitle>
-            <CardDescription>Acesso rápido às ações mais usadas</CardDescription>
+            {/* Remover descrição para economizar espaço em telas pequenas */}
           </CardHeader>
           <CardContent className="flex flex-wrap gap-2">
-            <Link to="/events/create">
-              <Button size="sm" variant="secondary" className="gap-2">
+            <Link to="/events/create" title="Novo Evento" aria-label="Novo Evento">
+              <Button size="icon" variant="secondary">
                 <Calendar className="h-4 w-4" />
-                Novo Evento
               </Button>
             </Link>
-            <Link to="/devotionals/create">
-              <Button size="sm" variant="secondary" className="gap-2">
+            <Link to="/devotionals/create" title="Novo Devocional" aria-label="Novo Devocional">
+              <Button size="icon" variant="secondary">
                 <BookOpen className="h-4 w-4" />
-                Novo Devocional
               </Button>
             </Link>
-            <Link to="/observations/create">
-              <Button size="sm" variant="secondary" className="gap-2">
+            <Link to="/observations/create" title="Nova Observação" aria-label="Nova Observação">
+              <Button size="icon" variant="secondary">
                 <StickyNote className="h-4 w-4" />
-                Nova Observação
               </Button>
             </Link>
-            <Link to="/groups">
-              <Button size="sm" variant="secondary" className="gap-2">
+            <Link to="/groups" title="Grupos" aria-label="Grupos">
+              <Button size="icon" variant="secondary">
                 <Users className="h-4 w-4" />
-                Grupos
               </Button>
             </Link>
-            <Link to="/scales">
-              <Button size="sm" variant="secondary" className="gap-2">
+            <Link to="/scales" title="Escalas" aria-label="Escalas">
+              <Button size="icon" variant="secondary">
                 <Clock className="h-4 w-4" />
-                Escalas
               </Button>
             </Link>
           </CardContent>
@@ -231,11 +221,12 @@ export default function Dashboard() {
                 )}
               </div>
               <div className="flex items-center gap-2">
-                <Button size="sm" variant="outline" onClick={refreshNotifications} title="Atualizar notificações">
-                  Atualizar
+                {/* Ações icon-only para economizar espaço */}
+                <Button size="icon" variant="outline" onClick={refreshNotifications} title="Atualizar notificações" aria-label="Atualizar">
+                  <RefreshCcw className="h-4 w-4" />
                 </Button>
-                <Button size="sm" variant="secondary" onClick={handleMarkAllRead} disabled={unreadCount === 0} title="Marcar todas como lidas">
-                  Marcar todas como lidas
+                <Button size="icon" variant="secondary" onClick={handleMarkAllRead} disabled={unreadCount === 0} title="Marcar todas como lidas" aria-label="Marcar todas">
+                  <CheckCheck className="h-4 w-4" />
                 </Button>
               </div>
             </div>
@@ -261,13 +252,15 @@ export default function Dashboard() {
                      </div>
                      <div className="mt-2 md:mt-0 flex items-center gap-2 flex-wrap">
                        {!n.read && (
-                         <Button size="sm" variant="outline" onClick={() => handleMarkRead(n.id)}>
-                           Marcar como lida
+                         <Button size="icon" variant="outline" onClick={() => handleMarkRead(n.id)} title="Marcar como lida" aria-label="Marcar como lida">
+                           <Check className="h-4 w-4" />
                          </Button>
                        )}
                        {n.entityType && n.entityId && (
-                         <Link to={`/${String(n.entityType).toLowerCase()}/${n.entityId}`}>
-                           <Button size="sm" variant="ghost">Abrir</Button>
+                         <Link to={`/${String(n.entityType).toLowerCase()}/${n.entityId}`} title="Abrir" aria-label="Abrir">
+                           <Button size="icon" variant="ghost">
+                             <ExternalLink className="h-4 w-4" />
+                           </Button>
                          </Link>
                        )}
                      </div>

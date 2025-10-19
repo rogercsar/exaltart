@@ -25,14 +25,20 @@ exports.handler = async function(event) {
       } catch (_) {}
     }
 
-    const itemsRaw = await supabaseFetch('/group_items', {
-      params: {
-        select: 'id,group_id,title,description,type,url,storage_path,author_id,created_at,updated_at',
-        group_id: `eq.${groupId}`,
-        order: 'created_at.desc'
-      }
-      // Não encaminhar Authorization do usuário para o Supabase REST
-    })
+    let itemsRaw = []
+    try {
+      itemsRaw = await supabaseFetch('/group_items', {
+        params: {
+          select: 'id,group_id,title,description,type,url,storage_path,author_id,created_at,updated_at',
+          group_id: `eq.${groupId}`,
+          order: 'created_at.desc'
+        }
+        // Não encaminhar Authorization do usuário para o Supabase REST
+      })
+    } catch (err) {
+      console.error('Falha ao buscar itens do grupo no Supabase:', err?.message || err)
+      itemsRaw = []
+    }
 
     const authorIds = Array.from(new Set((itemsRaw || []).map(i => i.author_id).filter(Boolean)))
     let usersMap = {}
@@ -77,9 +83,9 @@ exports.handler = async function(event) {
   } catch (error) {
     console.error('Erro ao listar itens de grupo:', error)
     return {
-      statusCode: 500,
+      statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ error: 'Falha ao listar itens do grupo.' })
+      body: JSON.stringify({ data: [], warning: 'Falha ao listar itens do grupo.' })
     }
   }
 }

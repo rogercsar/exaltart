@@ -15,7 +15,8 @@ import {
   StickyNote,
   Clock,
   UserCheck,
-  ListChecks
+  ListChecks,
+  Bell
 } from 'lucide-react'
 
 interface LayoutProps {
@@ -169,6 +170,7 @@ export default function Layout({ children }: LayoutProps) {
             size="icon"
             className="lg:hidden"
             onClick={() => setSidebarOpen(true)}
+            aria-label="Abrir menu"
           >
             <Menu className="h-6 w-6" />
           </Button>
@@ -176,7 +178,15 @@ export default function Layout({ children }: LayoutProps) {
           <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
             <div className="flex flex-1" />
             <div className="flex items-center gap-x-4 lg:gap-x-6">
+              {/* Divider */}
               <div className="hidden lg:block lg:h-6 lg:w-px lg:bg-gray-200" />
+              {/* Notifications icon */}
+              <Link to="/dashboard#notifications-section" title="Notificações" aria-label="Notificações">
+                <Button variant="ghost" size="icon">
+                  <Bell className="h-5 w-5" />
+                </Button>
+              </Link>
+              {/* User info */}
               <div className="flex items-center gap-x-4 lg:gap-x-6">
                 <div className="text-sm">
                   <p className="font-medium text-gray-900">{user?.name}</p>
