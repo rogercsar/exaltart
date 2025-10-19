@@ -136,13 +136,38 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">
-          Bem-vindo(a), {user?.name}!
-        </h1>
-        <p className="text-gray-600">
-          Aqui está um resumo do que está acontecendo no ministério.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Bem-vindo(a), {user?.name}!
+          </h1>
+          <p className="text-gray-600">
+            Aqui está um resumo do que está acontecendo no ministério.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="ghost"
+            className="relative"
+            onClick={() => document.getElementById('notifications-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+            title="Acessar notificações"
+            aria-label="Acessar notificações"
+          >
+            <Bell className="h-5 w-5" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] text-white">
+                {unreadCount}
+              </span>
+            )}
+          </Button>
+          <button
+            className="text-sm text-primary hover:underline"
+            onClick={() => document.getElementById('notifications-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+          >
+            Ver notificações
+          </button>
+        </div>
       </div>
 
       {/* Shortcuts and Notifications */}
@@ -191,7 +216,7 @@ export default function Dashboard() {
         </Card>
 
         {/* Notifications */}
-        <Card className="lg:col-span-2">
+        <Card id="notifications-section" className="lg:col-span-2">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -221,37 +246,26 @@ export default function Dashboard() {
             {notifications.length === 0 ? (
               <p className="text-sm text-muted-foreground">Sem notificações no momento.</p>
             ) : (
-              <ul className="space-y-3">
-                {notifications.map((n) => (
-                  <li
-                    key={n.id}
-                    className={`flex items-start justify-between rounded-md border p-3 ${!n.read ? 'border-primary/40 bg-primary/5' : ''}`}
-                  >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">{n.title}</span>
-                        {!n.read && (
-                          <span className="rounded-full bg-primary px-2 py-0.5 text-xs text-white">
-                            Nova
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground">{n.message}</p>
-                      <p className="text-xs text-muted-foreground">
+              <ul className="space-y-2">
+                {notifications.map(n => (
+                  <li key={n.id} className={`flex flex-col md:flex-row items-start justify-between rounded-md border p-3 ${!n.read ? 'border-primary/40 bg-primary/5' : ''}`}>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm break-words">
+                        {n.message}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
                         {new Date(n.createdAt).toLocaleString()}
                       </p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="mt-2 md:mt-0 flex items-center gap-2 flex-wrap">
                       {!n.read && (
-                        <Button size="sm" variant="outline" onClick={() => handleMarkRead(n.id)}>
+                        <Button size="sm" variant="default" onClick={() => markRead(n.id)}>
                           Marcar como lida
                         </Button>
                       )}
-                      {n.entityType && n.entityId && (
-                        <Link to={`/${String(n.entityType).toLowerCase()}/${n.entityId}`}>
-                          <Button size="sm" variant="ghost">Abrir</Button>
-                        </Link>
-                      )}
+                      <Button size="sm" variant="outline" onClick={() => deleteNotification(n.id)}>
+                        Excluir
+                      </Button>
                     </div>
                   </li>
                 ))}

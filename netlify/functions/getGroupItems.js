@@ -31,6 +31,7 @@ exports.handler = async function(event) {
         group_id: `eq.${groupId}`,
         order: 'created_at.desc'
       }
+      // Não encaminhar Authorization do usuário para o Supabase REST
     })
 
     const authorIds = Array.from(new Set((itemsRaw || []).map(i => i.author_id).filter(Boolean)))
@@ -42,6 +43,7 @@ exports.handler = async function(event) {
             select: 'id,name,email',
             id: `in.(${authorIds.join(',')})`
           }
+          // Não encaminhar Authorization do usuário para o Supabase REST
         })
         usersMap = (users || []).reduce((acc, u) => {
           acc[u.id] = { id: u.id, name: u.name, email: u.email }

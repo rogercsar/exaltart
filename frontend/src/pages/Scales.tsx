@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToast } from '@/hooks/use-toast'
 import type { User, Scale, Group } from '@/types/api'
-import { CalendarDays, Share2, Bell, CheckCircle2, Edit, XCircle, Eye } from 'lucide-react'
+import { CalendarDays, Share2, Bell, CheckCircle2, Edit, XCircle, Eye, Trash2 } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { useSound } from '@/hooks/useSound'
 
@@ -52,6 +52,10 @@ export default function Scales() {
   const [publishGroupId, setPublishGroupId] = useState<string>('')
   const [isViewOpen, setIsViewOpen] = useState(false)
   const [viewScale, setViewScale] = useState<Scale | null>(null)
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false)
+  const [deleteScaleId, setDeleteScaleId] = useState<string | null>(null)
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [deleteIsPublished, setDeleteIsPublished] = useState(false)
 
   useEffect(() => {
     const loadMembers = async () => {
@@ -262,6 +266,35 @@ export default function Scales() {
     }
   }
 
+  const openDelete = (id: string) => {
+    setDeleteScaleId(id)
+    const st = scales.find(s => s.id === id)?.status
+    setDeleteIsPublished(st === 'PUBLISHED')
+    setDeleteConfirmText('')
+    setIsDeleteOpen(true)
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteScaleId) return
+    try {
+      const res = await scalesApi.delete(deleteScaleId)
+      if (res?.success) {
+        setScales(prev => prev.filter(s => s.id !== deleteScaleId))
+        toast({ title: 'Escala excluída', description: 'A escala foi removida com sucesso.' })
+      } else {
+        toast({ title: 'Erro', description: 'Falha ao excluir escala', variant: 'destructive' })
+      }
+    } catch (err) {
+      console.error(err)
+      toast({ title: 'Erro', description: 'Falha ao excluir escala', variant: 'destructive' })
+    } finally {
+      setIsDeleteOpen(false)
+      setDeleteScaleId(null)
+      setDeleteConfirmText('')
+      setDeleteIsPublished(false)
+    }
+  }
+
   useEffect(() => {
     const loadScales = async () => {
       try {
@@ -398,12 +431,12 @@ export default function Scales() {
             <div className="space-y-4">
               {monthScales.map(scale => (
                 <div key={scale.id} className="rounded-md border p-3">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                     <div>
-                      <p className="font-medium">Semana {formatDate(scale.weekStart)} a {formatDate(scale.weekEnd || scale.weekStart)}</p>
-                      <p className="text-xs text-muted-foreground">Status: {scale.status === 'PUBLISHED' ? 'Publicado' : 'Rascunho'} {scale.groupId ? `• Grupo: ${(groups.find(g => g.id === scale.groupId)?.name) || '—'}` : ''}</p>
+                      <p className="font-medium break-words">Semana {formatDate(scale.weekStart)} a {formatDate(scale.weekEnd || scale.weekStart)}</p>
+                      <p className="text-xs text-muted-foreground break-words">Status: {scale.status === 'PUBLISHED' ? 'Publicado' : 'Rascunho'} {scale.groupId ? `• Grupo: ${(groups.find(g => g.id === scale.groupId)?.name) || '—'}` : ''}</p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-wrap sm:flex-nowrap">
                       <Button variant="outline" size="sm" onClick={() => shareWhatsApp(scale)} title="Compartilhar pelo WhatsApp">
                         <Share2 className="h-4 w-4 mr-1" /> WhatsApp
                       </Button>
@@ -427,6 +460,9 @@ export default function Scales() {
                               <CheckCircle2 className="h-4 w-4 mr-1" /> Publicar
                             </Button>
                           )}
+                          <Button variant="destructive" size="sm" onClick={() => openDelete(scale.id)} title="Excluir escala">
+                            <Trash2 className="h-4 w-4 mr-1" /> Excluir
+                          </Button>
                         </>
                       )}
                     </div>
@@ -531,6 +567,43 @@ export default function Scales() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete dialog */}
+      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir escala</DialogTitle>
+          </DialogHeader>
+          {deleteIsPublished ? (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Esta escala está publicada. A exclusão removerá todas as referências e não pode ser desfeita.
+              </p>
+              <p className="text-sm">Para confirmar, digite <span className="font-semibold">EXCLUIR</span> abaixo.</p>
+              <Input
+                placeholder="EXCLUIR"
+                value={deleteConfirmText}
+                onChange={e => setDeleteConfirmText(e.target.value)}
+              />
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Esta ação não pode ser desfeita. Confirma a exclusão?
+            </p>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>Cancelar</Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDelete}
+              disabled={deleteIsPublished && deleteConfirmText.trim().toUpperCase() !== 'EXCLUIR'}
+            >
+              Excluir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
+
 }
