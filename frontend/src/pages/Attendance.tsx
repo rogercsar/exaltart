@@ -150,10 +150,7 @@ const [rehearsalsList, setRehearsalsList] = useState<Rehearsal[]>([])
      })
    }, [rehearsalsList, searchText, filterStartDate, filterEndDate])
  
-   const changeJustificationNote = (userId: string, note: string) => {
-     handleChangeNote(userId, note)
-   }
-   // Open/Save justification modal
+   // Open/Save justificativa via modal
    const openJustification = (userId: string) => {
      setJustificationUserId(userId)
      setJustificationDraft(statusMap[userId]?.note || '')
