@@ -7,10 +7,10 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Label } from '@/components/ui/label'
+// import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import { UserCheck, ChevronLeft } from 'lucide-react'
-import type { AttendanceRecord, AttendanceStatus, Rehearsal } from '@/types/api'
+import type { AttendanceStatus, Rehearsal } from '@/types/api'
 
 export default function Attendance() {
   const { user: currentUser } = useAuthStore()

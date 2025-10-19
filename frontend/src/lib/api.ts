@@ -22,8 +22,7 @@ import type {
   CreateRehearsalRequest,
   UpdateRehearsalRequest,
   AttendanceRecord,
-  SetAttendanceRequestRecord,
-  AttendanceStatus
+  SetAttendanceRequestRecord
 } from '@/types/api'
 
 // Base URL for Netlify Functions (supports env override)
