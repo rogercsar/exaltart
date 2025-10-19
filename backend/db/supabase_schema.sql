@@ -149,7 +149,72 @@ create table if not exists public.attendance_records (
 create index if not exists idx_attendance_rehearsal on public.attendance_records(rehearsal_id);
 create index if not exists idx_attendance_user on public.attendance_records(user_id);
 
+-- Groups table
+create table if not exists public.groups (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  description text,
+  created_by uuid references public.users(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists idx_groups_name on public.groups(name);
+create index if not exists idx_groups_creator on public.groups(created_by);
+
+-- Group members (many-to-many)
+create table if not exists public.group_members (
+  group_id uuid not null references public.groups(id) on delete cascade,
+  user_id uuid not null references public.users(id) on delete cascade,
+  added_at timestamptz not null default now(),
+  primary key (group_id, user_id)
+);
+
+create index if not exists idx_group_members_user on public.group_members(user_id);
+
+-- Scales table
+create table if not exists public.scales (
+  id uuid primary key default gen_random_uuid(),
+  week_start date not null,
+  week_end date not null,
+  status text not null default 'DRAFT' check (status in ('DRAFT','PUBLISHED')),
+  group_id uuid references public.groups(id) on delete set null,
+  created_by uuid references public.users(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists idx_scales_week_start on public.scales(week_start);
+create index if not exists idx_scales_group on public.scales(group_id);
+
+-- Scale assignments (members assigned to a scale)
+create table if not exists public.scale_assignments (
+  scale_id uuid not null references public.scales(id) on delete cascade,
+  user_id uuid not null references public.users(id) on delete cascade,
+  viewed_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  primary key (scale_id, user_id)
+);
+
+create index if not exists idx_scale_assignments_user on public.scale_assignments(user_id);
+
 -- Attach triggers for updated_at on new tables
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'groups_set_updated_at') THEN
+    CREATE TRIGGER groups_set_updated_at BEFORE UPDATE ON public.groups
+      FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'scales_set_updated_at') THEN
+    CREATE TRIGGER scales_set_updated_at BEFORE UPDATE ON public.scales
+      FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'scale_assignments_set_updated_at') THEN
+    CREATE TRIGGER scale_assignments_set_updated_at BEFORE UPDATE ON public.scale_assignments
+      FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+  END IF;
+END $$;
 do $$
 begin
   if not exists (select 1 from pg_trigger where tgname = 'rehearsals_set_updated_at') then

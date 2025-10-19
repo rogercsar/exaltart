@@ -237,3 +237,49 @@ export interface SetAttendanceRequestRecord {
   note?: string
 }
 
+
+// Group types
+export interface Group {
+  id: string
+  name: string
+  description?: string
+  memberIds: string[]
+  members?: Array<Pick<User, 'id' | 'name' | 'email' | 'photoUrl'>>
+  createdById: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreateGroupRequest {
+  name: string
+  description?: string
+  memberIds: string[]
+}
+
+export interface UpdateGroupRequest extends Partial<CreateGroupRequest> {}
+
+// Scale types
+export type ScaleStatus = 'DRAFT' | 'PUBLISHED'
+
+export interface Scale {
+  id: string
+  weekStart: string // ISO date string (YYYY-MM-DD)
+  weekEnd?: string // optional, can be inferred from weekStart
+  groupId?: string
+  assignedMemberIds: string[]
+  status: ScaleStatus
+  createdById: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreateScaleRequest {
+  weekStart: string
+  weekEnd?: string
+  groupId?: string
+  assignedMemberIds: string[]
+  status?: ScaleStatus
+}
+
+export interface UpdateScaleRequest extends Partial<CreateScaleRequest> {}
+

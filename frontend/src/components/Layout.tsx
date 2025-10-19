@@ -14,7 +14,8 @@ import {
   BookOpen,
   StickyNote,
   Clock,
-  UserCheck
+  UserCheck,
+  ListChecks
 } from 'lucide-react'
 
 interface LayoutProps {
@@ -35,10 +36,15 @@ export default function Layout({ children }: LayoutProps) {
   const navigate = useNavigate()
   const location = useLocation()
 
-  const adminNavigation = [
+  const contentNavigation = [
     { name: 'Devocionais', href: '/devotionals', icon: BookOpen },
     { name: 'Observações', href: '/observations', icon: StickyNote },
     { name: 'Ensaios', href: '/rehearsals', icon: Clock },
+    { name: 'Grupos', href: '/groups', icon: Users },
+    { name: 'Escalas', href: '/scales', icon: ListChecks },
+  ]
+
+  const adminOnlyNavigation = [
     { name: 'Chamada de Presença', href: '/attendance', icon: UserCheck },
   ]
 
@@ -47,8 +53,8 @@ export default function Layout({ children }: LayoutProps) {
     : navigation.filter(n => n.name === 'Dashboard' || n.name === 'Eventos')
 
   const navItems = user?.role === 'ADMIN'
-    ? [...filteredNavigation, ...adminNavigation]
-    : filteredNavigation
+    ? [...filteredNavigation, ...contentNavigation, ...adminOnlyNavigation]
+    : [...filteredNavigation, ...contentNavigation]
 
   const handleLogout = () => {
     logout()

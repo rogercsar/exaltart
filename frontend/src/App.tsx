@@ -17,6 +17,8 @@ import DevotionalDetails from '@/pages/DevotionalDetails'
 import ObservationDetails from '@/pages/ObservationDetails'
 import Rehearsals from '@/pages/Rehearsals'
 import Attendance from '@/pages/Attendance'
+import Groups from '@/pages/Groups'
+import Scales from '@/pages/Scales'
 
 function App() {
   return (
@@ -144,7 +146,7 @@ function App() {
           <Route 
             path="/rehearsals" 
             element={
-              <ProtectedRoute requireAdmin>
+              <ProtectedRoute>
                 <Layout>
                   <Rehearsals />
                 </Layout>
@@ -167,6 +169,26 @@ function App() {
               <ProtectedRoute requireAdmin>
                 <Layout>
                   <Attendance />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/groups" 
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Groups />
+                </Layout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/scales" 
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Scales />
                 </Layout>
               </ProtectedRoute>
             } 

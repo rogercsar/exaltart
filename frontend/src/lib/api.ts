@@ -237,6 +237,120 @@ export const eventsApi = {
   }
 }
 
+// Groups API
+export const groupsApi = {
+  getAll: async (): Promise<{ groups: import('@/types/api').Group[] }> => {
+    const raw = await makeRequest(`${NETLIFY_FUNCTIONS_BASE}/getGroups`)
+    const groups = (raw?.data || []).map((g: any) => ({
+      id: g.id,
+      name: g.name,
+      description: g.description || '',
+      memberIds: Array.isArray(g.members) ? g.members.map((m: any) => m.id) : [],
+      members: g.members || [],
+      createdById: g.createdBy || '',
+      createdAt: g.createdAt,
+      updatedAt: g.updatedAt
+    }))
+    return { groups }
+  },
+
+  create: async (data: import('@/types/api').CreateGroupRequest): Promise<{ group: import('@/types/api').Group }> => {
+    const raw = await makeRequest(`${NETLIFY_FUNCTIONS_BASE}/createGroup`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+    const g = raw.group
+    return {
+      group: {
+        id: g.id,
+        name: g.name,
+        description: g.description || '',
+        memberIds: Array.isArray(g.members) ? g.members.map((m: any) => m.id) : [],
+        members: g.members || [],
+        createdById: g.createdBy || '',
+        createdAt: g.createdAt,
+        updatedAt: g.updatedAt
+      }
+    }
+  },
+
+  update: async (id: string, data: import('@/types/api').UpdateGroupRequest): Promise<{ group: import('@/types/api').Group }> => {
+    const url = `${NETLIFY_FUNCTIONS_BASE}/updateGroup?id=${encodeURIComponent(id)}`
+    const raw = await makeRequest(url, {
+      method: 'PATCH',
+      body: JSON.stringify(data)
+    })
+    const g = raw.group
+    return {
+      group: {
+        id: g.id,
+        name: g.name,
+        description: g.description || '',
+        memberIds: Array.isArray(g.members) ? g.members.map((m: any) => m.id) : [],
+        members: g.members || [],
+        createdById: g.createdBy || '',
+        createdAt: g.createdAt,
+        updatedAt: g.updatedAt
+      }
+    }
+  },
+
+  delete: async (id: string): Promise<{ success: boolean }> => {
+    const url = `${NETLIFY_FUNCTIONS_BASE}/deleteGroup?id=${encodeURIComponent(id)}`
+    return await makeRequest(url, { method: 'DELETE' })
+  }
+}
+
+// Scales API
+export const scalesApi = {
+  getAll: async (params?: { month?: string; groupId?: string }): Promise<{ scales: any[] }> => {
+    const queryParams = new URLSearchParams()
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) queryParams.append(key, String(value))
+      })
+    }
+    const url = `${NETLIFY_FUNCTIONS_BASE}/getScales${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
+    const raw = await makeRequest(url)
+    const scales = (raw?.data || []).map((s: any) => ({
+      id: s.id,
+      weekStart: s.weekStart,
+      weekEnd: s.weekEnd,
+      groupId: s.groupId || undefined,
+      assignedMemberIds: Array.isArray(s.members) ? s.members.map((m: any) => m.id) : [],
+      status: s.status,
+      createdById: s.createdBy || '',
+      createdAt: s.createdAt,
+      updatedAt: s.updatedAt,
+      members: s.members || []
+    }))
+    return { scales }
+  },
+
+  create: async (data: import('@/types/api').CreateScaleRequest): Promise<{ scale: any }> => {
+    const raw = await makeRequest(`${NETLIFY_FUNCTIONS_BASE}/createScale`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+    const s = raw.scale
+    return { scale: s }
+  },
+
+  update: async (id: string, data: import('@/types/api').UpdateScaleRequest): Promise<{ scale: any }> => {
+    const url = `${NETLIFY_FUNCTIONS_BASE}/updateScale?id=${encodeURIComponent(id)}`
+    const raw = await makeRequest(url, {
+      method: 'PATCH',
+      body: JSON.stringify(data)
+    })
+    return { scale: raw.scale }
+  },
+
+  delete: async (id: string): Promise<{ success: boolean }> => {
+    const url = `${NETLIFY_FUNCTIONS_BASE}/deleteScale?id=${encodeURIComponent(id)}`
+    return await makeRequest(url, { method: 'DELETE' })
+  }
+}
+
 // Transactions API
 export const transactionsApi = {
   getAll: async (params?: {
