@@ -49,26 +49,38 @@ exports.handler = async function(event) {
     const scales = await supabaseFetch('/scales', { params });
     const scaleIds = (scales || []).map(s => s.id);
 
+    // Buscar atribuições de membros (com fallback em caso de erro)
     let assignments = [];
     if (scaleIds.length > 0) {
-      assignments = await supabaseFetch('/scale_assignments', {
-        params: {
-          select: 'scale_id,user_id,viewed_at',
-          scale_id: `in.(${scaleIds.join(',')})`
-        }
-      });
+      try {
+        assignments = await supabaseFetch('/scale_assignments', {
+          params: {
+            select: 'scale_id,user_id,viewed_at',
+            scale_id: `in.(${scaleIds.join(',')})`
+          }
+        });
+      } catch (err) {
+        console.error('Falha ao buscar scale_assignments no Supabase:', err?.message || err);
+        assignments = [];
+      }
     }
 
+    // Buscar dados dos usuários (com fallback em caso de erro)
     const userIds = Array.from(new Set((assignments || []).map(a => a.user_id)));
     let usersMap = {};
     if (userIds.length > 0) {
-      const users = await supabaseFetch('/users', {
-        params: { select: 'id,name,email,photo_url', id: `in.(${userIds.join(',')})` }
-      });
-      usersMap = (users || []).reduce((acc, u) => {
-        acc[u.id] = { id: u.id, name: u.name, email: u.email, photoUrl: u.photo_url };
-        return acc;
-      }, {});
+      try {
+        const users = await supabaseFetch('/users', {
+          params: { select: 'id,name,email,photo_url', id: `in.(${userIds.join(',')})` }
+        });
+        usersMap = (users || []).reduce((acc, u) => {
+          acc[u.id] = { id: u.id, name: u.name, email: u.email, photoUrl: u.photo_url };
+          return acc;
+        }, {});
+      } catch (err) {
+        console.error('Falha ao buscar users no Supabase (para assignments):', err?.message || err);
+        usersMap = {};
+      }
     }
 
     const data = (scales || []).map(s => {

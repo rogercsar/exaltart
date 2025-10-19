@@ -33,31 +33,41 @@ exports.handler = async function(event) {
 
     const groupIds = filteredGroups.map(g => g.id);
 
-    // Buscar membros de todos os grupos listados
+    // Buscar membros de todos os grupos listados (com fallback em caso de erro)
     let memberships = [];
     if (groupIds.length > 0) {
-      memberships = await supabaseFetch('/group_members', {
-        params: {
-          select: 'group_id,user_id,added_at',
-          group_id: `in.(${groupIds.join(',')})`
-        }
-      });
+      try {
+        memberships = await supabaseFetch('/group_members', {
+          params: {
+            select: 'group_id,user_id,added_at',
+            group_id: `in.(${groupIds.join(',')})`
+          }
+        });
+      } catch (err) {
+        console.error('Falha ao buscar group_members no Supabase:', err?.message || err);
+        memberships = [];
+      }
     }
 
-    // Buscar dados dos usuários envolvidos
+    // Buscar dados dos usuários envolvidos (com fallback em caso de erro)
     const userIds = Array.from(new Set((memberships || []).map(m => m.user_id)));
     let usersMap = {};
     if (userIds.length > 0) {
-      const users = await supabaseFetch('/users', {
-        params: {
-          select: 'id,name,email,photo_url',
-          id: `in.(${userIds.join(',')})`
-        }
-      });
-      usersMap = (users || []).reduce((acc, u) => {
-        acc[u.id] = { id: u.id, name: u.name, email: u.email, photoUrl: u.photo_url };
-        return acc;
-      }, {});
+      try {
+        const users = await supabaseFetch('/users', {
+          params: {
+            select: 'id,name,email,photo_url',
+            id: `in.(${userIds.join(',')})`
+          }
+        });
+        usersMap = (users || []).reduce((acc, u) => {
+          acc[u.id] = { id: u.id, name: u.name, email: u.email, photoUrl: u.photo_url };
+          return acc;
+        }, {});
+      } catch (err) {
+        console.error('Falha ao buscar users no Supabase (para memberships):', err?.message || err);
+        usersMap = {};
+      }
     }
 
     // Montar resposta
