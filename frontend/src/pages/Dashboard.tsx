@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react'
 import { useAuthStore } from '@/stores/auth'
-import { eventsApi, transactionsApi, devotionalsApi, observationsApi } from '@/lib/api'
+import { eventsApi, transactionsApi, devotionalsApi, observationsApi, rehearsalsApi } from '@/lib/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Calendar, DollarSign, TrendingUp, BookOpen, StickyNote } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import type { Event, FinancialSummary, DevotionalPost, Observation } from '@/types/api'
+import type { Event, FinancialSummary, DevotionalPost, Observation, Rehearsal } from '@/types/api'
 
 export default function Dashboard() {
   const { user } = useAuthStore()
   const [events, setEvents] = useState<Event[]>([])
+  const [rehearsals, setRehearsals] = useState<Rehearsal[]>([])
   const [summary, setSummary] = useState<FinancialSummary | null>(null)
   const [devotionals, setDevotionals] = useState<DevotionalPost[]>([])
   const [observations, setObservations] = useState<Observation[]>([])
@@ -17,11 +18,12 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const [eventsRes, summaryRes, devotionalsRes, observationsRes] = await Promise.allSettled([
+        const [eventsRes, summaryRes, devotionalsRes, observationsRes, rehearsalsRes] = await Promise.allSettled([
           eventsApi.getAll(),
           transactionsApi.getSummary(),
           devotionalsApi.getAll({ limit: 5 }),
-          observationsApi.getAll({ limit: 5 })
+          observationsApi.getAll({ limit: 5 }),
+          rehearsalsApi.getAll()
         ])
 
         if (eventsRes.status === 'fulfilled') {
@@ -46,6 +48,12 @@ export default function Dashboard() {
           setObservations(((observationsRes.value as any).data || []) as Observation[])
         } else {
           console.error('Erro ao carregar observações no dashboard:', observationsRes.reason)
+        }
+
+        if (rehearsalsRes.status === 'fulfilled') {
+          setRehearsals(((rehearsalsRes.value as any).rehearsals || []).slice(0, 5))
+        } else {
+          console.error('Erro ao carregar ensaios no dashboard:', rehearsalsRes.reason)
         }
       } catch (error) {
         console.error('Error fetching dashboard data:', error)
@@ -98,7 +106,7 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total de Receitas</CardTitle>
@@ -157,6 +165,20 @@ export default function Dashboard() {
             </div>
             <p className="text-xs text-muted-foreground">
               Eventos agendados
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Ensaios Agendados</CardTitle>
+            <Calendar className="h-4 w-4 text-purple-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-purple-600">
+              {(rehearsals || []).length}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Ensaios agendados
             </p>
           </CardContent>
         </Card>

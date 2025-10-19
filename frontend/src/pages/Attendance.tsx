@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
-import { UserCheck, ChevronLeft, Plus, Printer, Share2, Edit, Trash2 } from 'lucide-react'
+import { UserCheck, ChevronLeft, Plus, Printer, Share2, Edit, Trash2, Eye } from 'lucide-react'
 import type { AttendanceStatus, Rehearsal } from '@/types/api'
 
 export default function Attendance() {
@@ -27,6 +27,7 @@ export default function Attendance() {
   const [loading, setLoading] = useState(true)
   const [statusMap, setStatusMap] = useState<Record<string, { status: AttendanceStatus; note?: string }>>({})
 const [searchParams] = useSearchParams()
+const isReadonly = searchParams.get('readonly') === '1'
 const [isNewCallOpen, setIsNewCallOpen] = useState(false)
 const [newEventType, setNewEventType] = useState<string>('Ensaio')
 const [newEventDate, setNewEventDate] = useState<string>(() => new Date().toISOString().slice(0, 10))
@@ -379,6 +380,9 @@ const [rehearsalsList, setRehearsalsList] = useState<Rehearsal[]>([])
                         <Button variant="outline" onClick={() => handleShare(r.id)}>
                           <Share2 className="h-4 w-4 mr-2" /> Compartilhar
                         </Button>
+                        <Button variant="outline" onClick={() => navigate(`/attendance/${r.id}?readonly=1`)}>
+                          <Eye className="h-4 w-4 mr-2" /> Visualizar
+                        </Button>
                         <Button variant="outline" onClick={() => navigate(`/attendance/${r.id}`)}>
                           <Edit className="h-4 w-4 mr-2" /> Editar
                         </Button>
@@ -409,7 +413,7 @@ const [rehearsalsList, setRehearsalsList] = useState<Rehearsal[]>([])
           <Button variant="outline" onClick={() => navigate(-1)}>
             <ChevronLeft className="h-4 w-4 mr-2" /> Voltar
           </Button>
-          <Button onClick={saveAttendance}>
+          <Button onClick={saveAttendance} disabled={isReadonly}>
             <UserCheck className="h-4 w-4 mr-2" /> Salvar Presença
           </Button>
         </div>
@@ -449,7 +453,7 @@ const [rehearsalsList, setRehearsalsList] = useState<Rehearsal[]>([])
                   <TableCell>{row.email}</TableCell>
                   <TableCell className="w-48">
                     <Select value={row.status || ''} onValueChange={(v) => handleChangeStatus(row.id, v as AttendanceStatus)}>
-                      <SelectTrigger>
+                      <SelectTrigger disabled={isReadonly}>
                         <SelectValue placeholder={statusLabel(row.status)} />
                       </SelectTrigger>
                       <SelectContent>
@@ -464,6 +468,7 @@ const [rehearsalsList, setRehearsalsList] = useState<Rehearsal[]>([])
                       placeholder="Ex: Chegou atrasado, justificativa, etc."
                       value={row.note}
                       onChange={(e) => handleChangeNote(row.id, e.target.value)}
+                      disabled={isReadonly}
                     />
                   </TableCell>
                 </TableRow>
