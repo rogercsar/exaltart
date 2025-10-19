@@ -34,6 +34,7 @@ export default function Scales() {
   const [form, setForm] = useState({
     weekStart: '',
     memberIds: [] as string[],
+    groupId: '' as string,
   })
 
   const [monthFilter, setMonthFilter] = useState<string>('') // YYYY-MM
@@ -46,6 +47,11 @@ export default function Scales() {
   const [_loadingGroups, setLoadingGroups] = useState(false)
   const [groupFilter, setGroupFilter] = useState<string>('')
   const [scaleMemberViews, setScaleMemberViews] = useState<Record<string, { id: string; viewedAt?: string | null }[]>>({})
+  const [isPublishOpen, setIsPublishOpen] = useState(false)
+  const [publishScaleId, setPublishScaleId] = useState<string | null>(null)
+  const [publishGroupId, setPublishGroupId] = useState<string>('')
+  const [isViewOpen, setIsViewOpen] = useState(false)
+  const [viewScale, setViewScale] = useState<Scale | null>(null)
 
   useEffect(() => {
     const loadMembers = async () => {
@@ -89,7 +95,7 @@ export default function Scales() {
     })
   }
 
-  const resetForm = () => setForm({ weekStart: '', memberIds: [] })
+  const resetForm = () => setForm({ weekStart: '', memberIds: [], groupId: '' })
 
   const handleCreateScale = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -103,7 +109,7 @@ export default function Scales() {
 
     setCreating(true)
     try {
-      const res = await scalesApi.create({ weekStart, assignedMemberIds: [...form.memberIds] })
+      const res = await scalesApi.create({ weekStart, assignedMemberIds: [...form.memberIds], groupId: form.groupId || undefined })
       const s = res.scale
       const created: Scale = {
         id: s.id,
@@ -128,11 +134,18 @@ export default function Scales() {
     }
   }
 
-  const publishScale = async (id: string) => {
+  const openPublish = (scaleId: string) => {
+    setPublishScaleId(scaleId)
+    setPublishGroupId(groupFilter || '')
+    setIsPublishOpen(true)
+  }
+
+  const publishScale = async () => {
+    if (!publishScaleId) return
     try {
-      const res = await scalesApi.update(id, { status: 'PUBLISHED' } as any)
+      const res = await scalesApi.update(publishScaleId, { status: 'PUBLISHED', groupId: publishGroupId || undefined } as any)
       const updated = res.scale
-      setScales(prev => prev.map(s => s.id === id ? {
+      setScales(prev => prev.map(s => s.id === publishScaleId ? {
         id: updated.id,
         weekStart: updated.weekStart || s.weekStart,
         weekEnd: updated.weekEnd || s.weekEnd,
@@ -142,10 +155,12 @@ export default function Scales() {
         createdAt: updated.createdAt || s.createdAt,
         updatedAt: updated.updatedAt || new Date().toISOString(),
       } : s))
-      const memberViews = Array.isArray(updated.members) ? updated.members.map((m: any) => ({ id: m.id, viewedAt: m.viewedAt })) : (scaleMemberViews[id] || [])
-      setScaleMemberViews(prev => ({ ...prev, [id]: memberViews }))
-      toast({ title: 'Publicado', description: 'Escala publicada para os membros selecionados.' })
+      const memberViews = Array.isArray(updated.members) ? updated.members.map((m: any) => ({ id: m.id, viewedAt: m.viewedAt })) : (scaleMemberViews[publishScaleId] || [])
+      setScaleMemberViews(prev => ({ ...prev, [publishScaleId]: memberViews }))
+      toast({ title: 'Publicado', description: 'Escala publicada para o grupo selecionado.' })
       playSuccess()
+      setIsPublishOpen(false)
+      setPublishScaleId(null)
     } catch (err) {
       console.error(err)
       playError()
@@ -208,6 +223,11 @@ export default function Scales() {
     setIsEditOpen(true)
   }
 
+  const openView = (scale: Scale) => {
+    setViewScale(scale)
+    setIsViewOpen(true)
+  }
+
   const toggleEditMember = (id: string) => {
     setEditMemberIds(prev => prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id])
   }
@@ -255,6 +275,7 @@ export default function Scales() {
           createdById: s.createdBy || s.createdById || '',
           createdAt: s.createdAt,
           updatedAt: s.updatedAt,
+          groupId: s.groupId || undefined,
         }))
         setScales(mapped)
         const viewsMap: Record<string, { id: string; viewedAt?: string | null }[]> = {}
@@ -316,6 +337,22 @@ export default function Scales() {
                   </div>
                 </div>
               </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label>Publicar em grupo (opcional)</Label>
+                  <Select value={form.groupId || 'NONE'} onValueChange={(v) => setForm({ ...form, groupId: v === 'NONE' ? '' : v })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione um grupo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="NONE">Nenhum</SelectItem>
+                      {(groups || []).map(g => (
+                        <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
               <div className="flex justify-end">
                 <Button type="submit" disabled={creating}>
                   {creating ? 'Criando...' : 'Criar Escala'}
@@ -364,7 +401,7 @@ export default function Scales() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium">Semana {formatDate(scale.weekStart)} a {formatDate(scale.weekEnd || scale.weekStart)}</p>
-                      <p className="text-xs text-muted-foreground">Status: {scale.status === 'PUBLISHED' ? 'Publicado' : 'Rascunho'}</p>
+                      <p className="text-xs text-muted-foreground">Status: {scale.status === 'PUBLISHED' ? 'Publicado' : 'Rascunho'} {scale.groupId ? `• Grupo: ${(groups.find(g => g.id === scale.groupId)?.name) || '—'}` : ''}</p>
                     </div>
                     <div className="flex gap-2">
                       <Button variant="outline" size="sm" onClick={() => shareWhatsApp(scale)} title="Compartilhar pelo WhatsApp">
@@ -372,6 +409,9 @@ export default function Scales() {
                       </Button>
                       <Button variant="outline" size="sm" onClick={() => notifyMembers(scale)} title="Enviar notificação">
                         <Bell className="h-4 w-4 mr-1" /> Notificar
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => openView(scale)} title="Visualizar escala">
+                        <Eye className="h-4 w-4 mr-1" /> Visualizar
                       </Button>
                       {isAdmin && (
                         <>
@@ -383,7 +423,7 @@ export default function Scales() {
                               <XCircle className="h-4 w-4 mr-1" /> Despublicar
                             </Button>
                           ) : (
-                            <Button variant="default" size="sm" onClick={() => publishScale(scale.id)} title="Publicar escala">
+                            <Button variant="default" size="sm" onClick={() => openPublish(scale.id)} title="Publicar escala">
                               <CheckCircle2 className="h-4 w-4 mr-1" /> Publicar
                             </Button>
                           )}
@@ -432,6 +472,62 @@ export default function Scales() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditOpen(false)}>Cancelar</Button>
             <Button onClick={saveEdit} disabled={savingEdit}>{savingEdit ? 'Salvando...' : 'Salvar'}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Publish dialog */}
+      <Dialog open={isPublishOpen} onOpenChange={setIsPublishOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Publicar escala em um grupo</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label>Selecionar grupo</Label>
+            <Select value={publishGroupId || 'NONE'} onValueChange={(v) => setPublishGroupId(v === 'NONE' ? '' : v)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um grupo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="NONE">Nenhum</SelectItem>
+                {(groups || []).map(g => (
+                  <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsPublishOpen(false)}>Cancelar</Button>
+            <Button onClick={publishScale}>Publicar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* View dialog */}
+      <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Detalhes da escala</DialogTitle>
+          </DialogHeader>
+          {viewScale && (
+            <div className="space-y-2 text-sm">
+              <p><strong>Semana:</strong> {formatDate(viewScale.weekStart)} a {formatDate(viewScale.weekEnd || viewScale.weekStart)}</p>
+              <p><strong>Status:</strong> {viewScale.status === 'PUBLISHED' ? 'Publicado' : 'Rascunho'}</p>
+              <p><strong>Grupo:</strong> {viewScale.groupId ? (groups.find(g => g.id === viewScale.groupId)?.name || '—') : '—'}</p>
+              <div>
+                <Label>Participantes</Label>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {(members || []).filter(m => viewScale.assignedMemberIds.includes(m.id)).map(m => (
+                    <span key={m.id} className="inline-flex items-center rounded-full bg-primary/10 text-primary px-2 py-1 text-xs">
+                      {m.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => setIsViewOpen(false)}>Fechar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
