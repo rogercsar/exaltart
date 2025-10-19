@@ -37,6 +37,10 @@ const [rehearsalsList, setRehearsalsList] = useState<Rehearsal[]>([])
   const [searchText, setSearchText] = useState('')
   const [filterStartDate, setFilterStartDate] = useState('')
   const [filterEndDate, setFilterEndDate] = useState('')
+  // Justificativa modal state
+  const [isJustificationOpen, setIsJustificationOpen] = useState(false)
+  const [justificationUserId, setJustificationUserId] = useState<string | null>(null)
+  const [justificationDraft, setJustificationDraft] = useState('')
 
   useEffect(() => {
     if (!isAdmin) return
@@ -148,6 +152,17 @@ const [rehearsalsList, setRehearsalsList] = useState<Rehearsal[]>([])
  
    const changeJustificationNote = (userId: string, note: string) => {
      handleChangeNote(userId, note)
+   }
+   // Open/Save justification modal
+   const openJustification = (userId: string) => {
+     setJustificationUserId(userId)
+     setJustificationDraft(statusMap[userId]?.note || '')
+     setIsJustificationOpen(true)
+   }
+   const saveJustification = () => {
+     if (!justificationUserId) return
+     handleChangeNote(justificationUserId, justificationDraft)
+     setIsJustificationOpen(false)
    }
 
   const formatDate = (iso: string) => new Date(iso).toLocaleDateString('pt-BR')
@@ -304,24 +319,26 @@ const [rehearsalsList, setRehearsalsList] = useState<Rehearsal[]>([])
                             <div className="font-medium">{m.name}</div>
                             <div className="text-sm text-gray-600">{m.email}</div>
                           </div>
-                          <div className="w-[60%] space-y-2">
+                          <div className="w-full sm:w-[60%] space-y-2">
                             <div className="flex items-center gap-4">
-                              <label className="flex items-center gap-2">
-                                <input type="radio" name={`status-${m.id}`} checked={st === 'PRESENT'} onChange={() => handleChangeStatus(m.id, 'PRESENT')} />
-                                <span>Presente</span>
-                              </label>
-                              <label className="flex items-center gap-2">
-                                <input type="radio" name={`status-${m.id}`} checked={st === 'JUSTIFIED'} onChange={() => handleChangeStatus(m.id, 'JUSTIFIED')} />
-                                <span>Falta com justificativa</span>
-                              </label>
-                              <label className="flex items-center gap-2">
-                                <input type="radio" name={`status-${m.id}`} checked={st === 'ABSENT'} onChange={() => handleChangeStatus(m.id, 'ABSENT')} />
-                                <span>Falta sem justificativa</span>
-                              </label>
+                              <div className="w-full sm:w-64">
+                                <Select value={st || ''} onValueChange={(v) => handleChangeStatus(m.id, v as AttendanceStatus)}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Selecione o status" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="PRESENT">Presente</SelectItem>
+                                    <SelectItem value="JUSTIFIED">Falta com justificativa</SelectItem>
+                                    <SelectItem value="ABSENT">Falta sem justificativa</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              {isJustified && (
+                                <Button variant="link" size="sm" title="Adicionar justificativa" aria-label="Adicionar justificativa" onClick={() => openJustification(m.id)}>
+                                  {statusMap[m.id]?.note ? 'Ver justificativa' : 'Adicionar justificativa'}
+                                </Button>
+                              )}
                             </div>
-                            {isJustified && (
-                              <Input placeholder="Justificativa" value={statusMap[m.id]?.note || ''} onChange={e => changeJustificationNote(m.id, e.target.value)} />
-                            )}
                           </div>
                         </div>
                       )
@@ -332,6 +349,29 @@ const [rehearsalsList, setRehearsalsList] = useState<Rehearsal[]>([])
               <DialogFooter>
                 <Button variant="outline" onClick={() => setIsNewCallOpen(false)}>Cancelar</Button>
                 <Button onClick={saveNewCall}><UserCheck className="h-4 w-4 mr-2" /> Salvar</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          {/* Justificativa Modal (Nova Chamada) */}
+          <Dialog open={isJustificationOpen} onOpenChange={setIsJustificationOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Justificativa</DialogTitle>
+                <DialogDescription>Informe a justificativa da falta.</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-2">
+                <Label htmlFor="justification">Justificativa</Label>
+                <textarea
+                  id="justification"
+                  rows={4}
+                  className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+                  value={justificationDraft}
+                  onChange={(e) => setJustificationDraft(e.target.value)}
+                />
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsJustificationOpen(false)}>Cancelar</Button>
+                <Button onClick={saveJustification}>Salvar</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -397,9 +437,33 @@ const [rehearsalsList, setRehearsalsList] = useState<Rehearsal[]>([])
             )}
           </CardContent>
         </Card>
-      </div>
-    )
-  }
+      {/* Justificativa Modal (Edição de chamada) */}
+      <Dialog open={isJustificationOpen} onOpenChange={setIsJustificationOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Justificativa</DialogTitle>
+            <DialogDescription>Informe a justificativa/observação do membro.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="justification-edit">Justificativa/Observação</Label>
+            <textarea
+              id="justification-edit"
+              rows={4}
+              className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+              value={justificationDraft}
+              onChange={(e) => setJustificationDraft(e.target.value)}
+              disabled={isReadonly}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsJustificationOpen(false)}>Cancelar</Button>
+            <Button onClick={saveJustification} disabled={isReadonly}>Salvar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
 
   return (
     <div className="space-y-6">
@@ -464,12 +528,17 @@ const [rehearsalsList, setRehearsalsList] = useState<Rehearsal[]>([])
                     </Select>
                   </TableCell>
                   <TableCell>
-                    <Input
-                      placeholder="Ex: Chegou atrasado, justificativa, etc."
-                      value={row.note}
-                      onChange={(e) => handleChangeNote(row.id, e.target.value)}
-                      disabled={isReadonly}
-                    />
+                    {row.status === 'JUSTIFIED' ? (
+                      <Button variant="link" size="sm" onClick={() => openJustification(row.id)} disabled={isReadonly} title="Adicionar/Ver justificativa" aria-label="Adicionar ou ver justificativa">
+                        {row.note ? 'Ver justificativa' : 'Adicionar justificativa'}
+                      </Button>
+                    ) : row.note ? (
+                      <Button variant="link" size="sm" onClick={() => openJustification(row.id)} disabled={isReadonly} title="Ver observação" aria-label="Ver observação">
+                        Ver observação
+                      </Button>
+                    ) : (
+                      <span className="text-gray-400">—</span>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
